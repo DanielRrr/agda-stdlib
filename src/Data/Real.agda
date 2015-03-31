@@ -2,13 +2,11 @@ module Data.Real where
 
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
-open import Data.Nat as ℕ using (ℕ; suc; zero; compare; _≟_; z≤n) renaming (_≤_ to ℕ_≤_)
+open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n) renaming (_≤_ to ℕ_≤_)
 open import Relation.Nullary.Decidable using (True; False; toWitness; fromWitness)
 open import Data.Nat.Coprimality using (1-coprimeTo; sym; 0-coprimeTo-1)
 open import Relation.Binary.Core using (_≡_; refl; Sym; _Respects_; Rel)
 open import Relation.Binary.PropositionalEquality.Core using (trans; subst)
-open import Data.Unit using (tt)
---open import Agda.Primitive using (Level; lzero)
 import Level
 
 --Constructs a real number given a sequence approximating it and a proof that it is regular
@@ -37,7 +35,7 @@ refl-lem {x} = ℝ.reg x
 reflex : (x : ℝ) -> x ≃ x
 reflex x = refl-lem {x}
 
-
+--For symmetry, the idea is to show that |x - y| = |y - x|
 nomlemma : (x : ℚ) -> (ℚ.numerator x ≡ ℤ.- ℚ.numerator (ℚ.- x))
 nomlemma (qcon -[1+ n ] d c) = refl
 nomlemma (qcon (+ 0) d c) = refl
