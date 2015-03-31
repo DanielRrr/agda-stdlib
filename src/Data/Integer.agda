@@ -163,6 +163,13 @@ private
 _*_ : ℤ → ℤ → ℤ
 i * j = sign i S* sign j ◃ ∣ i ∣ ℕ* ∣ j ∣
 
+--Exponentiation
+infixr 8 _^_
+
+_^_ : ℤ -> ℕ -> ℤ
+z ^ ℕ.zero = + 1
+z ^ (ℕ.suc n) = z * z ^ n
+
 -- Maximum.
 
 _⊔_ : ℤ → ℤ → ℤ
