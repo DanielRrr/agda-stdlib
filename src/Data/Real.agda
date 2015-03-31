@@ -1,56 +1,42 @@
-module Realsimpler where
+module Data.Real where
 
-open import Altrat as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon)
-open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_; ∣_∣ to ℤ∣_∣; _≤_ to ℤ_≤_)
+open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣)
+open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Nat as ℕ using (ℕ; suc; zero; compare; _≟_; z≤n) renaming (_≤_ to ℕ_≤_)
 open import Relation.Nullary.Decidable using (True; False; toWitness; fromWitness)
 open import Data.Nat.Coprimality using (1-coprimeTo; sym; 0-coprimeTo-1)
-open import Relation.Binary.Core using (_≡_; refl; Sym; _Respects_)
+open import Relation.Binary.Core using (_≡_; refl; Sym; _Respects_; Rel)
 open import Relation.Binary.PropositionalEquality.Core using (trans; subst)
 open import Data.Unit using (tt)
+--open import Agda.Primitive using (Level; lzero)
+import Level
 
---Before we define the real numbers, we will need some additional functions and lemmas
+--Constructs a real number given a sequence approximating it and a proof that it is regular
+record ℝ : Set where
+  constructor _,_
+  field
+    f : ℕ -> ℚ
+    reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))})
 
---Injectivity of suc function
-sinj : {n m : ℕ} -> (suc n ≡ suc m) -> n ≡ m
-sinj refl = refl
+---------------------------------------------------------------------------
+--Equality
 
---Exponentiating integers with natural numbers
-infixr 8 _^_
+--Equality of real numbers.
 
-_^_ : ℤ -> ℕ -> ℤ
-p ^  zero = + 1
-p ^ suc n = p ℤ.* p ^ n
+infix 4 _≃_
 
---Absolute value of a rational number
-∣_∣ : ℚ -> ℚ
-∣ p ∣ = (+ ℤ.∣ ℚ.numerator p ∣ ÷ ( suc (ℚ.denominator-1 p))) {ℚ.isCoprime p}
- --The numerators of zero
-zerlem : ℚ.numerator (+ zero ÷ 1) ≡ + zero
-zerlem = refl
+_≃_ : Rel ℝ Level.zero
+x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤  (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
 
-{-
---The numerator of -(p/q) is -p
-nomlemma : (x : ℚ) -> (ℚ.numerator (ℚ.- x) ≡ ℤ.- ℚ.numerator (x))
-nomlemma x with ℚ.numerator x | ℚ.denominator-1 x | toWitness (ℚ.isCoprime x)
-... | -[1+ n ] | d | c = refl
-... | + 0       | d | c = 0 ≡ Respects (sinj (Sym (0-coprimeTo-1 c))) (d ≡ 0) refl
-... | + ℕ.suc n | d | c = refl
+--Proof that this is an equivalence relation-------------------
 
---Lemma showing that the denominator-1 of -0 is 0
-dlem :   ℚ.denominator-1 (ℚ.- (((+ zero ÷ 1) {fromWitness (λ {i} → (0-coprimeTo-1))}))) ≡ 0
-dlem = refl
+--Reflexity
+refl-lem : {x : ℝ} ->  ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f x n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
+refl-lem {x} = ℝ.reg x
 
+reflex : (x : ℝ) -> x ≃ x
+reflex x = refl-lem {x}
 
---proof that x and -x have the same denominator
-delemma : (x : ℚ) -> (ℚ.denominator-1 x ≡ ℚ.denominator-1 (ℚ.- x))
-delemma x with ℚ.numerator x | ℚ.denominator-1 x | (ℚ.isCoprime x)
-... | -[1+ n ] | d | c = refl
-... | + 0       | 0 | tt = refl
-... | + 0 | suc n | ()
-... | + ℕ.suc n | d | c = refl
-
--}
 
 nomlemma : (x : ℚ) -> (ℚ.numerator x ≡ ℤ.- ℚ.numerator (ℚ.- x))
 nomlemma (qcon -[1+ n ] d c) = refl
@@ -76,24 +62,8 @@ diflem {x} {y} = trans lemAnd (cong ∣_∣ lemNeed)
 -}
 
 
---Constructs a real number given a sequence approximating it and a proof that it is regular
-record ℝ : Set where
-  constructor _,_
-  field
-    f : ℕ -> ℚ
-    reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))})
 
---Equality relation on real numbers
-infix 4 _==_
-data _==_ : (x : ℝ) -> (y : ℝ) -> Set where
- *==* : (x : ℝ) -> (y : ℝ) -> ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤  (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})) -> x == y
 
--- reflexive property
-prfeq : {x : ℝ} {n : ℕ} -> (∣ ℝ.f x n - ℝ.f x n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
-prfeq {x} = ℝ.reg x
-
-reflex : (x : ℝ) -> x == x
-reflex x = *==* x x (prfeq {x})
 
 
 -- -- --Examples

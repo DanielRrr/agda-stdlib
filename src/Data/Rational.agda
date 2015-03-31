@@ -13,7 +13,7 @@ open import Data.Unit using (⊤; tt)
 import Data.Bool.Properties as Bool
 open import Function
 open import Data.Product
-open import Data.Integer as ℤ using (ℤ; ∣_∣; +_; -[1+_]; _◃_; sign)
+open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; sign)
 open import Data.Integer.Divisibility as ℤDiv using (Coprime)
 import Data.Integer.Properties as ℤ
 open import Data.Nat.GCD
@@ -44,10 +44,11 @@ infixl 6 _-_ _+_
 -- suffice to use "isCoprime : Coprime numerator denominator".)
 
 record ℚ : Set where
+  constructor qcon
   field
     numerator     : ℤ
     denominator-1 : ℕ
-    isCoprime     : True (C.coprime? ∣ numerator ∣ (suc denominator-1))
+    isCoprime     : True (C.coprime? ℤ.∣ numerator ∣ (suc denominator-1))
 
   denominator : ℤ
   denominator = + suc denominator-1
@@ -61,7 +62,7 @@ record ℚ : Set where
 infixl 7 _÷_
 
 _÷_ : (numerator : ℤ) (denominator : ℕ)
-      {coprime : True (C.coprime? ∣ numerator ∣ denominator)}
+      {coprime : True (C.coprime? ℤ.∣ numerator ∣ denominator)}
       {≢0 : False (ℕ._≟_ denominator 0)} →
       ℚ
 (n ÷ zero) {≢0 = ()}
@@ -139,15 +140,20 @@ gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 -- improve on the current heuristics. I recorded this as a bug
 -- http://code.google.com/p/agda/issues/detail?id=1079
 
+{-
 -_ : ℚ → ℚ
--_ p with ℚ.numerator p | ℚ.denominator-1 p | toWitness (ℚ.isCoprime p)
-... | -[1+ n ]  | d | c = (+ ℕ.suc n ÷ ℕ.suc d) {fromWitness (λ {i} → c)}
+-_ (qcon -[1+ n ] d c) = (+ ℕ.suc n ÷ ℕ.suc d) {fromWitness (λ {i} → c)}
 ... | + 0       | d | _ = p
 ... | + ℕ.suc n | d | c = (-[1+ n ]  ÷ ℕ.suc d) {fromWitness (λ {i} → c)}
+-}
+-_ : ℚ → ℚ
+- (qcon -[1+ n ] d c) = (+ ℕ.suc n ÷ ℕ.suc d) {c}
+- (qcon (+ 0) d c) = (+ 0 ÷ suc d) {c}
+- (qcon (+ ℕ.suc n) d c) = (-[1+ n ]  ÷ ℕ.suc d) {c}
 
 -- reciprocal: requires a proof that the numerator is not zero
 
-1/_ : (p : ℚ) → {n≢0 : NonZero ∣ ℚ.numerator p ∣} → ℚ
+1/_ : (p : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p ∣} → ℚ
 1/_ p {n≢0} with ℚ.numerator p | ℚ.denominator-1 p | toWitness (ℚ.isCoprime p)
 1/_ p {()} | + 0 | d | c
 ... | + (ℕ.suc n) | d | c =
@@ -168,14 +174,14 @@ gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 private 
 
   helper* : (n₁ : ℤ) → (d₁ : ℕ) → (n₂ : ℤ) → (d₂ : ℕ) →
-            {n≢0 : NonZero ∣ n₁ ℤ.* n₂ ∣} →
+            {n≢0 : NonZero ℤ.∣ n₁ ℤ.* n₂ ∣} →
             {d≢0 : NonZero (d₁ ℕ.* d₂)} →
             ℚ
   helper* n₁ d₁ n₂ d₂ {n≢0} {d≢0} =
     let n = n₁ ℤ.* n₂
         d = d₁ ℕ.* d₂
-        (g , G , g≢0) = gcd≢0 ∣ n ∣ d {n≢0}
-        (nn , nd , nd≢0 , nc) = normalize {∣ n ∣} {d} {g} {d≢0} {g≢0} G
+        (g , G , g≢0) = gcd≢0 ℤ.∣ n ∣ d {n≢0}
+        (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ n ∣} {d} {g} {d≢0} {g≢0} G
     in ((sign n ◃ nn) ÷ nd) 
        {fromWitness (λ {i} → 
           subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign n) nn)) nc)}
@@ -205,15 +211,15 @@ private
   helper+ : (n : ℤ) → (d : ℕ) → {d≢0 : NonZero d} → ℚ
   helper+ (+ 0) d {d≢0} = + 0 ÷ 1
   helper+ (+ ℕ.suc n) d {d≢0} =
-    let (g , G , g≢0) = gcd≢0 ∣ + ℕ.suc n ∣ d {tt}
-        (nn , nd , nd≢0 , nc) = normalize {∣ + ℕ.suc n ∣} {d} {g} {d≢0} {g≢0} G
+    let (g , G , g≢0) = gcd≢0 ℤ.∣ + ℕ.suc n ∣ d {tt}
+        (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ + ℕ.suc n ∣} {d} {g} {d≢0} {g≢0} G
     in ((S.+ ◃ nn) ÷ nd) 
        {fromWitness (λ {i} → 
           subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ S.+ nn)) nc)}
        {nd≢0}
   helper+ -[1+ n ] d {d≢0} =
-    let (g , G , g≢0) = gcd≢0 ∣ -[1+ n ] ∣ d {tt}
-        (nn , nd , nd≢0 , nc) = normalize {∣ -[1+ n ] ∣} {d} {g} {d≢0} {g≢0} G
+    let (g , G , g≢0) = gcd≢0 ℤ.∣ -[1+ n ] ∣ d {tt}
+        (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ -[1+ n ] ∣} {d} {g} {d≢0} {g≢0} G
     in ((S.- ◃ nn) ÷ nd) 
        {fromWitness (λ {i} → 
           subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ S.- nn)) nc)}
@@ -234,8 +240,19 @@ p₁ + p₂ =
 _-_ : ℚ → ℚ → ℚ
 p₁ - p₂ = p₁ + (- p₂)
 
-_/_ : (p₁ p₂ : ℚ) → {n≢0 : NonZero ∣ ℚ.numerator p₂ ∣} → ℚ
+_/_ : (p₁ p₂ : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p₂ ∣} → ℚ
 _/_ p₁ p₂ {n≢0} = p₁ * (1/_ p₂ {n≢0})
+
+--exponential function on integers creates a rational
+infixr 8 _^_
+
+_^_ : ℚ -> ℕ -> ℚ
+p ^  zero = + 1 ÷ 1
+p ^  suc n = p  * p ^ n
+
+--absolute value of a rational number
+∣_∣ : ℚ -> ℚ
+∣ p ∣ = (+ ℤ.∣ ℚ.numerator p ∣ ÷ ( suc (ℚ.denominator-1 p))) {ℚ.isCoprime p}
 
 -- conventional printed representation
 
@@ -275,18 +292,18 @@ p ≃ q = numerator p ℤ.* denominator q ≡
     1+d₁∣1+d₂ : suc d₁ ∣ suc d₂
     1+d₁∣1+d₂ = ℤDiv.coprime-divisor (+ suc d₁) n₁ (+ suc d₂)
                   (C.sym $ toWitness c₁) $
-                  ℕDiv.divides ∣ n₂ ∣ (begin
-                    ∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ cong ∣_∣ eq ⟩
-                    ∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ ℤ.abs-*-commute n₂ (+ suc d₁) ⟩
-                    ∣ n₂ ∣ ℕ.* suc d₁    ∎)
+                  ℕDiv.divides ℤ.∣ n₂ ∣ (begin
+                    ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ cong ℤ.∣_∣ eq ⟩
+                    ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ ℤ.abs-*-commute n₂ (+ suc d₁) ⟩
+                    ℤ.∣ n₂ ∣ ℕ.* suc d₁    ∎)
 
     1+d₂∣1+d₁ : suc d₂ ∣ suc d₁
     1+d₂∣1+d₁ = ℤDiv.coprime-divisor (+ suc d₂) n₂ (+ suc d₁)
                   (C.sym $ toWitness c₂) $
-                  ℕDiv.divides ∣ n₁ ∣ (begin
-                    ∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ cong ∣_∣ (P.sym eq) ⟩
-                    ∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ ℤ.abs-*-commute n₁ (+ suc d₂) ⟩
-                    ∣ n₁ ∣ ℕ.* suc d₂    ∎)
+                  ℕDiv.divides ℤ.∣ n₁ ∣ (begin
+                    ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ cong ℤ.∣_∣ (P.sym eq) ⟩
+                    ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ ℤ.abs-*-commute n₁ (+ suc d₂) ⟩
+                    ℤ.∣ n₁ ∣ ℕ.* suc d₂    ∎)
 
   helper n₁ d c₁ n₂ .d c₂ eq | refl with ℤ.cancel-*-right
                                            n₁ n₂ (+ suc d) (λ ()) eq
