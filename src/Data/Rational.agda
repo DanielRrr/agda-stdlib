@@ -17,8 +17,8 @@ open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; sign)
 open import Data.Integer.Divisibility as ℤDiv using (Coprime)
 import Data.Integer.Properties as ℤ
 open import Data.Nat.GCD
-open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides)
-import Data.Nat.Coprimality as C using (sym; Coprime; coprime?; Bézout-coprime)
+open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides; quotient)
+import Data.Nat.Coprimality as C using (sym; Coprime; coprime?; Bézout-coprime; 0-coprimeTo-1; 1-coprimeTo; coprime-gcd)
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Nat.Show renaming (show to ℕshow)
 open import Data.Sum
@@ -32,8 +32,8 @@ open import Relation.Binary.PropositionalEquality as P
 open P.≡-Reasoning
 
 infix  8 -_ 1/_
-infixl 7 _*_ _/_
-infixl 6 _-_ _+_
+--infixl 7  _/_ _*_
+--infixl 6 _-_ _+_
 
 ------------------------------------------------------------------------
 -- The definition
@@ -90,7 +90,7 @@ NonZero (suc _) = ⊤
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
 -- returns them normalized as 2 and 7 and a proof that they are coprime
 
-normalize : ∀ {m n g} → {n≢0 : (NonZero n)} → {g≢0 : (NonZero g)} →
+normalize : ∀ {m n g} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
             GCD m n g → Σ[ p ∈ ℕ ] Σ[ q ∈ ℕ ] False (q ℕ.≟ 0) × C.Coprime p q
 normalize {m} {n} {0} {_} {()} _
 normalize {m} {n} {ℕ.suc g} {_} {_} G with Bézout.identity G
@@ -119,15 +119,52 @@ normalize {m} {n} {ℕ.suc g} {_} {_}
                ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
                  y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))
 
+
 -- a version of gcd that returns a proof that the result is non-zero given
 -- that one of the inputs is non-zero
-
+{-
 gcd≢0 : (m n : ℕ) → {m≢0 : NonZero m} → ∃ λ d → GCD m n d × NonZero d
 gcd≢0 m  n {m≢0} with gcd m n
 gcd≢0 m  n {m≢0} | (0 , GCD.is (0|m , _) _) with ℕDiv.0∣⇒≡0 0|m
 gcd≢0 .0 n {()}  | (0 , GCD.is (0|m , _) _) | refl
 gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
+-}
 
+gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
+gcd≢0 m  n {m≢0} with gcd m n
+gcd≢0 m  n {m≢0} | (0 , GCD.is (_ , 0|n) _) with ℕDiv.0∣⇒≡0 0|n
+gcd≢0 m .0 {()}  | (0 , GCD.is (_ , 0|n) _) | refl
+gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
+
+--Reduces a given quotient to its coprime form
+reduce :  ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
+reduce (+ 0) d = (+ 0 ÷ 1)
+reduce n 0 {()}
+reduce n d {d≢0} =
+  let
+      (g , G , g≢0) = gcd≢0 ℤ.∣ n ∣ d {d≢0}
+      (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ n ∣} {d} {g} {d≢0} {g≢0} G
+  in ((sign n ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign n) nn)) nc)}
+     {nd≢0}
+
+{-
+--Combining these two gives us a useful way to reduce quotients to rational numbers. Takes denominator-1 as second argument
+reduce :  ℤ -> ℕ -> ℚ
+reduce (+ 0) d = (+ 0 ÷ 1)
+reduce n 0  = (n ÷ 1) {fromWitness (λ {i} -> C.sym (C.1-coprimeTo ℤ.∣ n ∣))}
+reduce (+ (suc n)) d =
+  let
+      (g , G , g≢0) = gcd≢0  ℤ.∣ + (suc n) ∣ (suc d) {tt}
+      (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ + (suc n) ∣} {suc d} {g} {_} {g≢0} G
+  in ((sign (+ (suc n)) ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign (+ (suc n))) nn)) nc)}
+     {nd≢0}
+reduce -[1+ n ] d =
+  let
+      (g , G , g≢0) = gcd≢0  ℤ.∣ -[1+ n ] ∣ (suc d) {_}
+      (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ -[1+ n ] ∣} {suc d} {g} {_} {g≢0} G
+  in ((sign (-[1+ n ]) ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign (-[1+ n ])) nn)) nc)}
+     {nd≢0}
+-}
 ------------------------------------------------------------------------------
 -- Operations on rationals: unary -, reciprocal, multiplication, addition
 
@@ -152,8 +189,9 @@ gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 1/_ (qcon (+ zero) d₂ c₂) {()}
 1/_ (qcon -[1+ n₃ ] d₃ c₃) {n≢0} = (-[1+ d₃ ] ÷ (suc n₃)) {fromWitness (λ {i} → C.sym (toWitness c₃))}
 
+{-
 -- multiplication
- 
+
 private 
 
    helper* : (n₁ : ℤ) → (d₁ : ℕ) → (n₂ : ℤ) → (d₂ : ℕ) →
@@ -177,7 +215,21 @@ p * (qcon (+ 0) d c) = + 0 ÷ 1
 (qcon (+ suc n₁) d₁ c₁) * (qcon -[1+ n₂ ] d₂ c₂) = helper* (+ suc n₁)(suc d₁) -[1+ n₂ ](suc d₂)
 (qcon -[1+ n₁ ] d₁ c₁) * (qcon (+ suc n₂) d₂ c₂) = helper* -[1+ n₁ ](suc d₁)(+ suc n₂)(suc d₂)
 (qcon -[1+ n₁ ] d₁ c₁) * (qcon -[1+ n₂ ] d₂ c₂) = helper* -[1+ n₁ ](suc d₁)-[1+ n₂ ](suc d₂)
+-}
 
+_*_ : ℚ -> ℚ -> ℚ
+(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
+
+
+--En god ide skulle kunna vara att skriva om helper* så att det är en funktion som bara normaliserar två element, n₁*n₂ och d₁*d₂. Man skulle kanske kunna skriva en enklare version av normalize och bara använda sig av den hela tiden i alla de här funktionerna
+{-
+--my take on addition
+_+_ : ℚ → ℚ → ℚ
+(qcon (+ 0) d₁ c₁) + p₂ = p₂
+p₁ + (qcon (+ 0) d₂ c₂) = p₁
+(qcon (+ suc n₁) d₁ c₁) + (qcon (+ suc n₂) d₂ c₂) = helper* (
+-}
+{-
 -- addition
 
 private 
@@ -208,6 +260,11 @@ p₁ + p₂ =
       n = (n₁ ℤ.* + d₂) ℤ.+ (n₂ ℤ.* + d₁)
       d = d₁ ℕ.* d₂
   in helper+ n d
+-}
+
+_+_ : ℚ → ℚ → ℚ
+(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = reduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
+
 
 -- subtraction and division
 
