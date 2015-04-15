@@ -27,8 +27,7 @@ import Level
 open import Relation.Nullary.Decidable
 open import Relation.Nullary
 open import Relation.Binary
-open import Relation.Binary.PropositionalEquality as P
-  using (_≡_; refl; subst; cong; cong₂)
+open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂)
 open P.≡-Reasoning
 
 infix  8 -_ 1/_
@@ -86,64 +85,10 @@ private
 NonZero : ℕ → Set
 NonZero 0       = ⊥
 NonZero (suc _) = ⊤
-{-
-reduce :  ℤ -> (n : ℕ) -> {n≢0 : NonZero n} -> ℚ
-reduce (+ 0) n = (+ 0 ÷ 1)
-reduce z n {n≢0} with gcd ℤ.∣ z ∣ n
-reduce z zero {()} | G
-reduce z  n {n≢0} | (0 , GCD.is (_ , 0|n) _) with ℕDiv.0∣⇒≡0 0|n
-reduce z .0 {()}  | (0 , GCD.is (_ , 0|n) _) | refl 
-reduce z (suc n) {_}  | (suc g , GCD.is (_ , (divides (suc den) n+1≡gden)) _) with Bézout.identity (GCD.is (_ , divides (suc den) n+1≡gden) _)
---reduce z zero {()} | _ | _
-reduce z  (suc n) {_} | (suc g , GCD.is (divides num z≡gnum , divides (suc den) n+1≡gden),_ ) | Bézout.+- x y eq = (qcon (sign z ◃ num) den (fromWitness (λ {i} -> (subst (λ h → C.Coprime h (suc den)) (P.sym (ℤ.abs-◃ (sign z) num)) (C.Bézout-coprime {num} {suc den} {g} (Bézout.+- x y
-               (begin
-                 ℕ.suc g ℕ.+ y ℕ.* ((suc den) ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ y ℕ.* h) (P.sym n+1≡gden) ⟩
-                 ℕ.suc g ℕ.+ y ℕ.* (suc n)
-               ≡⟨ eq ⟩
-                 x ℕ.* ℤ.∣ z ∣
-               ≡⟨ cong (λ h → x ℕ.* h) z≡gnum ⟩
-                 x ℕ.* (num ℕ.* ℕ.suc g) ∎)))))))
-reduce z  (suc n) {_} | (suc g , GCD.is ((divides num z≡gnum) , divides (suc den) z≡gden),_ ) | Bézout.-+ x y eq = {!!}
---reduce z  (suc d) {_} | (ℕ.suc g , GCD.is (g+1|z , g+1|n+1),_ ) | Bézout.-+ x y eq = {!!}
--}
-{-
-reduce :  ℤ -> (n : ℕ) -> {n≢0 : NonZero n} -> ℚ
-reduce (+ 0) n = (+ 0 ÷ 1)
-reduce z n {n≢0} with gcd ℤ.∣ z ∣ n
-reduce z zero {()} | G
-reduce z  n {n≢0} | (0 , GCD.is (_ , 0|n) _) with ℕDiv.0∣⇒≡0 0|n
-reduce z .0 {()}  | (0 , GCD.is (_ , 0|n) _) | refl
-reduce z  (suc n) {_} | (ℕ.suc g , G) with Bézout.identity G
-reduce z  (suc n) {_} | (ℕ.suc g , GCD.is (g+1|z , g+1|n+1),_ ) | Bézout.+- x y eq =
-  let 
-    num = sign z ◃ (ℕDiv.quotient g+1|z)
-    den = ℕDiv.quotient g+1|n+1
-    
-  in (num ÷ den ) {{!C.Bézout-coprime {ℤ.∣ num ∣} {den} {g} (Bézout.+- x y
-               (begin
-                 ℕ.suc g ℕ.+ y ℕ.* (den ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ y ℕ.* h) (P.sym n≡qg') ⟩
-                 ℕ.suc g ℕ.+ y ℕ.* n
-               ≡⟨ eq ⟩
-                 x ℕ.* m
-               ≡⟨ cong (λ h → x ℕ.* h) m≡pg' ⟩
-                 x ℕ.* (p ℕ.* ℕ.suc g) ∎))!}}
-
-reduce z  (suc d) {_} | (ℕ.suc g , GCD.is (g+1|z , g+1|n+1),_ ) | Bézout.-+ x y eq = {!!}
--}
---(ℕ.suc g , GCD.is (g+1|n , g+1|d+1),_ ) = {!!}
-
-{-
-  let 
-     (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} G
-  in ((sign n ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign n) nn)) nc)}
-     {nd≢0}
--}
 
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
 -- returns them normalized as 2 and 7 and a proof that they are coprime
-normalize : ∀ {m n g} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
+normalize : {m n g : ℕ} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
             GCD m n g → ℚ
 normalize {m} {n} {0} {_} {()} _
 normalize {m} {n} {ℕ.suc g} {_} {_} G with Bézout.identity G
@@ -172,36 +117,14 @@ normalize {m} {n} {ℕ.suc g} {_} {_}
                ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
                  y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))))
 
+--gcd that gives a proof that g is zero if one of its inputs are.
+gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
+gcd≢0 m n {m≢0} with gcd m n
+gcd≢0 m n {m≢0} | (0 , GCD.is (_ , 0n) _) with ℕDiv.0∣⇒≡0 0n
+gcd≢0 m .0 {()} | (0 , GCD.is (_ , 0n) _) | refl
+gcd≢0 m n {_} | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
+
 {-
-normalize : ∀ {m n g} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
-            GCD m n g → Σ[ p ∈ ℕ ] Σ[ q ∈ ℕ ] False (q ℕ.≟ 0) × C.Coprime p q
-normalize {m} {n} {0} {_} {()} _
-normalize {m} {n} {ℕ.suc g} {_} {_} G with Bézout.identity G
-normalize {m} {.0} {ℕ.suc g} {()} {_}
-  (GCD.is (divides p m≡pg' , divides 0 refl) _) | _
-normalize {m} {n} {ℕ.suc g} {_} {_}
-  (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.+- x y eq =
-    (p , ℕ.suc q , tt , C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.+- x y
-               (begin
-                 ℕ.suc g ℕ.+ y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ y ℕ.* h) (P.sym n≡qg') ⟩
-                 ℕ.suc g ℕ.+ y ℕ.* n
-               ≡⟨ eq ⟩
-                 x ℕ.* m
-               ≡⟨ cong (λ h → x ℕ.* h) m≡pg' ⟩
-                 x ℕ.* (p ℕ.* ℕ.suc g) ∎)))
-normalize {m} {n} {ℕ.suc g} {_} {_}
-  (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.-+ x y eq =
-    (p , ℕ.suc q , tt , C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.-+ x y
-               (begin
-                 ℕ.suc g ℕ.+ x ℕ.* (p ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ x ℕ.* h) (P.sym m≡pg') ⟩
-                 ℕ.suc g ℕ.+ x ℕ.* m
-               ≡⟨ eq ⟩
-                 y ℕ.* n
-               ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
-                 y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))
--}
 --Reduces a given quotient to its coprime form
 
 reduce :  ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
@@ -209,50 +132,22 @@ reduce (+ 0) d = (+ 0 ÷ 1)
 reduce n d {d≢0} with gcd ℤ.∣ n ∣ d
 reduce n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
 reduce n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-reduce n  d | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} G
-reduce n  d | (ℕ.suc g , G) | p = (qcon (sign n ◃ (ℤ.∣ ℚ.numerator p ∣)) (ℚ.denominator-1 p) (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc (ℚ.denominator-1 p))) (P.sym (ℤ.abs-◃ (sign n) (ℤ.∣ ℚ.numerator p ∣))) (toWitness (ℚ.isCoprime p)))))
-
-
---= (qcon (sign n ◃ (ℤ.∣ (ℚ.numerator (normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} G))∣)) ℚ.denominator-1 fromWitness (λ {i} → subst (λ h → C.Coprime h ℚ.denominator-1 ) (P.sym (ℤ.abs-◃ (sign n) nn)) nc))
-
-{-
-stupidway : (n d : ℕ) -> {d≢0 : NonZero d} -> Σ[ p ∈ ℕ ] Σ[ q ∈ ℕ ] False (q ℕ.≟ 0) × C.Coprime p q
-stupidway n d {d≢0} with gcd  n d
-stupidway n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
-stupidway n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-stupidway n  d | (ℕ.suc g , G) = normalize {n} {d} {ℕ.suc g} G
-
-
-stupidreduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-stupidreduce z n {d≢0} =
-  let
-     (nn , nd , nd≢0 , nc) = stupidway ℤ.∣ z ∣ n {d≢0}
-  in ((sign z ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign z) nn)) nc)}
-     {nd≢0}
-
-_+_ : ℚ → ℚ → ℚ
-(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = stupidreduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
+reduce n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} {d≢0} G
+reduce n  d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') = (qcon (sign n ◃ ℤ.∣ n' ∣) d' (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc d')) (P.sym (ℤ.abs-◃ (sign n) ℤ.∣ n' ∣)) (toWitness c'))))
 -}
+wheretofindthislemma? : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
+wheretofindthislemma? (+ zero) = refl
+wheretofindthislemma? (+ suc n) = refl
+wheretofindthislemma? -[1+ z ] = refl
 
--- a version of gcd that returns a proof that the result is non-zero given
--- that one of the inputs is non-zero
-gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
-gcd≢0 m  n {m≢0} with gcd m n
-gcd≢0 m  n {m≢0} | (0 , GCD.is (_ , 0|n) _) with ℕDiv.0∣⇒≡0 0|n
-gcd≢0 m .0 {()}  | (0 , GCD.is (_ , 0|n) _) | refl
-gcd≢0 m  n {_}   | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
+-_ : ℚ → ℚ
+- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))))
 
-{-
-reduce :  ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-reduce (+ 0) d = (+ 0 ÷ 1)
-reduce n 0 {()}
-reduce n d {d≢0} =
-  let
-      (g , G , g≢0) = gcd≢0 ℤ.∣ n ∣ d {d≢0}
-      (nn , nd , nd≢0 , nc) = normalize {ℤ.∣ n ∣} {d} {g} {d≢0} {g≢0} G
-  in ((sign n ◃ nn) ÷ nd){fromWitness (λ {i} → subst (λ h → C.Coprime h nd) (P.sym (ℤ.abs-◃ (sign n) nn)) nc)}
-     {nd≢0}
--}
+redduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
+redduce (+ 0) d = (+ 0 ÷ 1)
+redduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
+redduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
+
 ------------------------------------------------------------------------------
 -- Operations on rationals: unary -, reciprocal, multiplication, addition
 
@@ -265,13 +160,6 @@ reduce n d {d≢0} =
 -- improve on the current heuristics. I recorded this as a bug
 -- http://code.google.com/p/agda/issues/detail?id=1079
 
-wheretofindthislemma? : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
-wheretofindthislemma? (+ zero) = refl
-wheretofindthislemma? (+ suc n) = refl
-wheretofindthislemma? -[1+ z ] = refl
-
--_ : ℚ → ℚ
-- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))))
 --- (qcon n d c) = ((ℤ.- n) ÷ (suc d)) {fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))}
 {-
 - (qcon -[1+ n ] d c) = (+ ℕ.suc n ÷ ℕ.suc d) {c}
@@ -286,11 +174,11 @@ wheretofindthislemma? -[1+ z ] = refl
 1/_ (qcon -[1+ n₃ ] d₃ c₃) {n≢0} = (-[1+ d₃ ] ÷ (suc n₃)) {fromWitness (λ {i} → C.sym (toWitness c₃))}
 
 _*_ : ℚ -> ℚ -> ℚ
-(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
+(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = redduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
 
 
 _+_ : ℚ → ℚ → ℚ
-(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = reduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
+(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = redduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
 
 
 -- subtraction and division
