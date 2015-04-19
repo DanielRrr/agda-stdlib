@@ -3,8 +3,9 @@ module Data.Real where
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣; _≤?_; NonZero; normalize; decTotalOrder)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_; sign) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Sign using (Sign)
-open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n; _+⋎_) renaming (_≤_ to ℕ_≤_)
-open import Data.Nat.Properties.Simple using (+-suc; +-comm; +-right-identity)
+open import Data.Unit using (⊤; tt)
+open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n; _+⋎_; pred) renaming (_≤_ to ℕ_≤_)
+open import Data.Nat.Properties.Simple using (+-suc; +-comm; +-right-identity; *-comm)
 open import Relation.Nullary.Decidable using (True; False; toWitness; fromWitness)
 open import Data.Nat.Coprimality using (1-coprimeTo; sym; 0-coprimeTo-1)
 open import Relation.Binary.Core using (_≡_; refl; Sym; Rel; Reflexive; _Preserves_⟶_)
@@ -69,13 +70,11 @@ redlem -[1+ n ] d {d≢0} = ≃⇒≡ (cong₂ (ℤ._*_) {x} {y} {z} {w}  (minmi
 redlem (+ zero) d {d≢0} = refl
 redlem (+ suc n) d = refl
 
-{-
+
 -- Tar lång tid att parsa den här
- --This lemma gives us a handy way of expressing x - y
-Lemm : (x y : ℚ) -> (x - y ≡ 
-      ℚ.reduce (ℚ.numerator x ℤ.* ℚ.denominator y ℤ.- 
-      (ℚ.numerator y ℤ.* ℚ.denominator x))
-      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
+
+
+{-
 Lemm (qcon -[1+ n ] xd xc) (qcon -[1+ n₁ ] yd yc) = refl
 Lemm (qcon -[1+ n ] xd xc) (qcon (+ zero) yd yc) = refl
 Lemm (qcon -[1+ n ] xd xc) (qcon (+ suc n₁) yd yc) = refl
@@ -116,14 +115,20 @@ intlem (+ zero) -[1+ n₁ ] = refl
 intlem (+ suc n) -[1+ n₁ ] = cong (λ a -> -[1+ a ]) (+-comm n (suc n₁))
 intlem (+ zero) (+ zero) = refl
 intlem (+ zero) (+ suc n₁) = cong (λ a -> + a) (P.sym (+-right-identity (suc n₁)))
-intlem (+ suc n) (+ zero) = {!cong (λ a -> -[1+ a ]) (+-right-identity (n))!}
+intlem (+ suc n) (+ zero) = cong (λ a -> -[1+ a ]) (+-right-identity n)
 intlem (+ suc n) (+ suc n₁) = P.sym (⊖-swap n₁ n)
-{-
+
+nonzerlem : (a b : ℕ) {a≢0 : ℚ.NonZero a} {b≢0 : ℚ.NonZero b} -> (NonZero (a ℕ.* b))
+nonzerlem 0 b {()} {bnz}
+nonzerlem a 0 {anz} {()}
+nonzerlem (suc a) (suc b) = tt
+
 --Symmetry 
 --symlem : x - y ≡ - y - x
 symlem : (x y : ℚ) -> (ℚ.- (y ℚ.- x) ≡ x - y)
-symlem (qcon xn xd xc) (qcon yn yd yc) = trans (cong (λ a -> ℚ.- a) (Lemm (qcon yn yd yc) (qcon xn xd xc))) (trans (cong (λ a -> a) (redlem (yn ℤ.* (+ suc xd) ℤ.- xn ℤ.* (+ suc yd))((suc yd) ℕ.* (suc xd)))) {!!})
--}
+symlem (qcon xn xd xc) (qcon yn yd yc) = trans (cong (λ a -> ℚ.- a) (ℚ.Lemm (qcon yn yd yc) (qcon xn xd xc))) (trans (cong (λ a -> a) (redlem (yn ℤ.* (+ suc xd) ℤ.- xn ℤ.* (+ suc yd))((suc yd) ℕ.* (suc xd)))) (trans (cong (λ a -> ℚ.reduce (a) (suc yd ℕ.* suc xd))(intlem (yn ℤ.* + suc xd) (xn ℤ.* + suc yd))) (trans (cong (λ a -> ℚ.reduce (xn ℤ.* + suc yd ℤ.- yn ℤ.* + suc xd)(suc (ℕ.pred a))) (*-comm (suc yd)(suc xd))) (cong (λ a -> a) (P.sym (ℚ.Lemm (qcon xn xd xc)(qcon yn yd yc))) )))) 
+
+
 
 -- --(ℚ.reduce 
 --       (ℚ.numerator x ℤ.* + suc a ℤ.+ 
