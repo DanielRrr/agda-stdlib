@@ -3,15 +3,17 @@ module Data.Real where
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣; _≤?_; NonZero; normalize; decTotalOrder)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_; sign) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Sign using (Sign)
-open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n) renaming (_≤_ to ℕ_≤_)
+open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n; _+⋎_) renaming (_≤_ to ℕ_≤_)
+open import Data.Nat.Properties.Simple using (+-suc; +-comm; +-right-identity)
 open import Relation.Nullary.Decidable using (True; False; toWitness; fromWitness)
 open import Data.Nat.Coprimality using (1-coprimeTo; sym; 0-coprimeTo-1)
 open import Relation.Binary.Core using (_≡_; refl; Sym; Rel; Reflexive; _Preserves_⟶_)
 open import Relation.Binary.PropositionalEquality.Core using (trans; subst)
 import Level
 open import Algebra.Properties.Ring using (-‿*-distribˡ)
+open import Algebra.Properties.Group using (⁻¹-involutive)
 open import Algebra using (CommutativeRing; Ring)
-open import Data.Integer.Properties using (commutativeRing; abs-◃ )
+open import Data.Integer.Properties using (commutativeRing; abs-◃)
 import Data.Nat.Coprimality as C using (sym; Coprime; coprime?; Bézout-coprime; 0-coprimeTo-1; 1-coprimeTo; coprime-gcd)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂)
 open import Relation.Binary.Core as BC using (Transitive)
@@ -25,7 +27,6 @@ record ℝ : Set where
   field
     f : ℕ -> ℚ
     reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))})
-
   ---------------------------------------EQUALITY-------------------------
 --Equality
 
@@ -34,7 +35,8 @@ record ℝ : Set where
 infix 4 _≃_
 
 _≃_ : Rel ℝ Level.zero
-x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤  (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
+x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤  ℚ.reduce (+ 2)(suc n))
+-- (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
 
 --Proof that this is an equivalence relation-------------------
 
@@ -46,44 +48,134 @@ minminlem : (z : ℤ) -> ((ℤ.- (ℤ.- z)) ≡ z)
 minminlem -[1+ n ] = refl
 minminlem (+ zero) = refl
 minminlem (+ suc n) = refl
+{-
 
-reddlem : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.redduce z n {n≢0}) ≡ ℚ.redduce (ℤ.- z) n {n≢0})
-reddlem -[1+ n ] d {d≢0} = ≃⇒≡ (cong₂ (ℤ._*_) {x} {y} {z} {w}  (minminlem (ℚ.ℚ.numerator (normalize (proj₁ (proj₂ (ℚ.gcd≢0 (suc n) d)))))) refl) where 
+redlem : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
+redlem -[1+ n ] d {d≢0} = ≃⇒≡ (cong₂ (ℤ._*_) {x} {y} {z} {w}  (minminlem (ℚ.numerator (normalize (proj₁ (proj₂ (ℚ.gcd≢0 (suc n) d)))))) refl) where 
    x = ℚ.numerator (ℚ.- (ℚ.redduce -[1+ n ] d {d≢0}))
    y = ℚ.numerator (ℚ.redduce (ℤ.- -[1+ n ]) d {d≢0})
    z = ℚ.denominator (ℚ.redduce (ℤ.- -[1+ n ]) d {d≢0})
    w = ℚ.denominator (ℚ.- (ℚ.redduce -[1+ n ] d {d≢0}))
-reddlem (+ zero) d {d≢0} = refl
-reddlem (+ suc n) d = refl
+redlem (+ zero) d {d≢0} = refl
+redlem (+ suc n) d = refl
+-}
 
+redlem : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
+redlem -[1+ n ] d {d≢0} = ≃⇒≡ (cong₂ (ℤ._*_) {x} {y} {z} {w}  (minminlem (ℚ.numerator (normalize (proj₁ (proj₂ (ℚ.gcd≢0 (suc n) d)))))) refl) where 
+   x = ℚ.numerator (ℚ.- (ℚ.reduce -[1+ n ] d {d≢0}))
+   y = ℚ.numerator (ℚ.reduce (ℤ.- -[1+ n ]) d {d≢0})
+   z = ℚ.denominator (ℚ.reduce (ℤ.- -[1+ n ]) d {d≢0})
+   w = ℚ.denominator (ℚ.- (ℚ.reduce -[1+ n ] d {d≢0}))
+redlem (+ zero) d {d≢0} = refl
+redlem (+ suc n) d = refl
+
+{-
+-- Tar lång tid att parsa den här
+ --This lemma gives us a handy way of expressing x - y
+Lemm : (x y : ℚ) -> (x - y ≡ 
+      ℚ.reduce (ℚ.numerator x ℤ.* ℚ.denominator y ℤ.- 
+      (ℚ.numerator y ℤ.* ℚ.denominator x))
+      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
+Lemm (qcon -[1+ n ] xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon -[1+ n ] xd xc) (qcon (+ zero) yd yc) = refl
+Lemm (qcon -[1+ n ] xd xc) (qcon (+ suc n₁) yd yc) = refl
+Lemm (qcon (+ zero) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon (+ suc n) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon (+ 0) xd xc) (qcon (+ suc n₁) yd yc) = refl
+Lemm (qcon (+ 0) xd xc) (qcon (+ 0) yd yc) = refl
+Lemm (qcon (+ suc n) xd xc) (qcon (+ 0) yd yc) = refl
+Lemm (qcon (+ suc n) xd xc) (qcon (+ suc n₁) yd yc) = refl
+-}
+ZRing : Ring _ _
+ZRing = record
+  { Carrier           = ℤ
+  ; _≈_               = _≡_
+  ; _+_               = ℤ._+_
+  ; _*_               = ℤ._*_
+  ; -_                = ℤ.-_
+  ; 0#                = + 0
+  ; 1#                = + 1
+  ; isRing = CommutativeRing.isRing commutativeRing
+   }
+
+-- mulemma : (z₁ z₂ : ℤ) -> ((ℤ.- z₁) ℤ.*  z₂ ≡ ℤ.- (z₁ ℤ.* z₂))
+-- mulemma x y = -‿*-distribˡ (ZRing) x y
+⊖-swap : ∀ a b → a ⊖ b ≡ ℤ.- (b ⊖ a)
+⊖-swap zero    zero    = refl
+⊖-swap (suc _) zero    = refl
+⊖-swap zero    (suc _) = refl
+⊖-swap (suc a) (suc b) = ⊖-swap a b
+
+--Kanske till hjälp? 
+--⁻¹-∙-comm (P.sym (⊖-swap a b))
+intlem : (a b : ℤ) -> (ℤ.- (a ℤ.- b) ≡ b ℤ.- a)
+intlem -[1+ n ] -[1+ n₁ ] = P.sym (⊖-swap n n₁)
+intlem -[1+ n ] (+ zero) = refl
+intlem -[1+ n ] (+ suc n₁) = trans (cong (λ a -> + suc (suc a)) (+-comm n n₁)) (cong (λ a -> + a) (P.sym (+-suc (suc n₁) n)))
+intlem (+ zero) -[1+ n₁ ] = refl
+intlem (+ suc n) -[1+ n₁ ] = cong (λ a -> -[1+ a ]) (+-comm n (suc n₁))
+intlem (+ zero) (+ zero) = refl
+intlem (+ zero) (+ suc n₁) = cong (λ a -> + a) (P.sym (+-right-identity (suc n₁)))
+intlem (+ suc n) (+ zero) = {!cong (λ a -> -[1+ a ]) (+-right-identity (n))!}
+intlem (+ suc n) (+ suc n₁) = P.sym (⊖-swap n₁ n)
+{-
 --Symmetry 
 --symlem : x - y ≡ - y - x
-
---Trans
-transs : (y x -> z)
-decTotalOrder.ℤO.trans x y 
-
---(minminlem (ℚ.numerator (ℚ.- (ℚ.redduce -[1+ n ] d {d≢0}))))
-{-
---Varför kan inte
-redlem : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
-redlem n d {d≢0} with gcd ℤ.∣ n ∣ d
-redlem n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
-redlem n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-redlem n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g}{d≢0} G
-redlem n d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c')  = {!refl!}
+symlem : (x y : ℚ) -> (ℚ.- (y ℚ.- x) ≡ x - y)
+symlem (qcon xn xd xc) (qcon yn yd yc) = trans (cong (λ a -> ℚ.- a) (Lemm (qcon yn yd yc) (qcon xn xd xc))) (trans (cong (λ a -> a) (redlem (yn ℤ.* (+ suc xd) ℤ.- xn ℤ.* (+ suc yd))((suc yd) ℕ.* (suc xd)))) {!!})
 -}
 
-{-
--- Kan man "inferra" vad reduce n d är med ett dot pattern?
-reduceL : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
-reduceL (+ 0) d = refl
-reduceL n d {d≢0} with gcd ℤ.∣ n ∣ d
-reduceL n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
-reduceL n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-reduceL n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} G | ℚ.reduce n d {d≢0}
-reduceL n d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') | .(qcon (sign n ◃ ℤ.∣ n' ∣) d' (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc d')) (P.sym (abs-◃ (sign n) ℤ.∣ n' ∣)) (toWitness c')))) = ?
--}
+-- --(ℚ.reduce 
+--       (ℚ.numerator x ℤ.* + suc a ℤ.+ 
+--       ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
+--       (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) 
+--       (trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
+--       a ℤ.* + suc (ℚ.denominator-1 x))
+--       (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) 
+--       ((cong (λ ab -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ ab)
+--       (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))))  (mulemma (ℚ.numerator y)(+ suc (ℚ.denominator-1 x)))))
+--      trans (cong (λ a -> (ℚ.reduce 
+--       (ℚ.numerator x ℤ.* + suc a ℤ.+ 
+--       ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
+--       (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) (trans ( trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
+--       a ℤ.* + suc (ℚ.denominator-1 x))
+--       (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) ({!!}) ))
+
+
+
+-- trans {!cong (λ a -> a) (redlem (yn ℤ.* + (suc xd) ℤ.- (xn ℤ.* + (suc  yd)))((suc yd) ℕ.* (suc xd)))!} {!!}
+
+
+-- --Right side:
+-- ℚ.reduce
+-- ((sign xn Data.Sign.* Data.Sign.+ ◃ ℤ.∣ xn ∣ ℕ.* suc yd) ℤ+
+--  (sign (ℤ.- yn) Data.Sign.* Data.Sign.+ ◃ ℤ.∣ ℤ.- yn ∣ ℕ.* suc xd))
+-- (suc (yd ℕ.+ xd ℕ.* suc yd))
+
+-- --Left side:
+-- Trans
+-- transs : (y x -> z)
+-- decTotalOrder.ℤO.trans x y 
+
+-- (minminlem (ℚ.numerator (ℚ.- (ℚ.redduce -[1+ n ] d {d≢0}))))
+
+-- --Varför kan inte
+-- redlem : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
+-- redlem n d {d≢0} with gcd ℤ.∣ n ∣ d
+-- redlem n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
+-- redlem n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
+-- redlem n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g}{d≢0} G
+-- redlem n d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c')  = {!refl!}
+
+
+-- -- Kan man "inferra" vad reduce n d är med ett dot pattern?
+-- reduceL : (z : ℤ) -> (n : ℕ) -> {n≢0 : ℚ.NonZero n} -> (ℚ.- (ℚ.reduce z n {n≢0}) ≡ ℚ.reduce (ℤ.- z) n {n≢0})
+-- reduceL (+ 0) d = refl
+-- reduceL n d {d≢0} with gcd ℤ.∣ n ∣ d
+-- reduceL n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
+-- reduceL n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
+-- reduceL n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} G | ℚ.reduce n d {d≢0}
+-- reduceL n d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') | .(qcon (sign n ◃ ℤ.∣ n' ∣) d' (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc d')) (P.sym (abs-◃ (sign n) ℤ.∣ n' ∣)) (toWitness c')))) = ?
 
 
 
@@ -260,209 +352,209 @@ reduceL n d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') | .(qcon (sign n ◃ ℤ
 -- -- testfest {qcon (+ n₁) d₁ c₁} {qcon (+ n₂) d₂ c₂} = {!refl!}
 
 
--- -- --This lemma gives us a handy way of expressing x - y
--- -- Lemm : (x y : ℚ) -> (x - y ≡ 
--- --      ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.- 
--- --      ℚ.numerator y ℤ.* + suc (ℚ.denominator-1 x))
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
--- -- Lemm x y = trans (cong (λ a -> (ℚ.reduce 
--- --      (ℚ.numerator x ℤ.* + suc a ℤ.+ 
--- --      ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) 
--- --      (trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
--- --      a ℤ.* + suc (ℚ.denominator-1 x))
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) 
--- --      ((cong (λ ab -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
--- --      ab)
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))))  (mulemma (ℚ.numerator y)(+ suc (ℚ.denominator-1 x)))))
--- -- trans (cong (λ a -> (ℚ.reduce 
--- --      (ℚ.numerator x ℤ.* + suc a ℤ.+ 
--- --      ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) (trans ( trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
--- --      a ℤ.* + suc (ℚ.denominator-1 x))
--- --      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) ({!!}) ))
+-- --This lemma gives us a handy way of expressing x - y
+-- Lemm : (x y : ℚ) -> (x - y ≡ 
+--      ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.- 
+--      ℚ.numerator y ℤ.* + suc (ℚ.denominator-1 x))
+--      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
+-- Lemm x y = trans (cong (λ a -> (ℚ.reduce 
+--      (ℚ.numerator x ℤ.* + suc a ℤ.+ 
+--      ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
+--      (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) 
+--      (trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
+--      a ℤ.* + suc (ℚ.denominator-1 x))
+--      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) 
+--      ((cong (λ ab -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
+--      ab)
+--      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))))  (mulemma (ℚ.numerator y)(+ suc (ℚ.denominator-1 x)))))
+-- trans (cong (λ a -> (ℚ.reduce 
+--      (ℚ.numerator x ℤ.* + suc a ℤ.+ 
+--      ℚ.numerator (ℚ.- y) ℤ.* + suc (ℚ.denominator-1 x))
+--      (suc (ℚ.denominator-1 x) ℕ.* suc a))) (delemma y)) (trans ( trans (cong (λ a -> (ℚ.reduce (ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y) ℤ.+ 
+--      a ℤ.* + suc (ℚ.denominator-1 x))
+--      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))) (nomlemma y)) ({!!}) ))
 
--- -- subst  (λ a -> (x - y ≡
--- --   ℚ.reduce
--- --   (ℚ.ℚ.numerator x ℤ* + suc a ℤ.-
--- --   ℚ.ℚ.numerator y ℤ* + suc (ℚ.ℚ.denominator-1 x))
--- --   (suc (ℚ.ℚ.denominator-1 x) ℕ.* suc (ℚ.ℚ.denominator-1 y)))) (delemma y) (refl
+-- subst  (λ a -> (x - y ≡
+--   ℚ.reduce
+--   (ℚ.ℚ.numerator x ℤ* + suc a ℤ.-
+--   ℚ.ℚ.numerator y ℤ* + suc (ℚ.ℚ.denominator-1 x))
+--   (suc (ℚ.ℚ.denominator-1 x) ℕ.* suc (ℚ.ℚ.denominator-1 y)))) (delemma y) (refl
 
--- --           x - y evaluates to
--- -- ℚ.reduce
--- -- (ℚ.ℚ.numerator x ℤ.* (+ suc (ℚ.ℚ.denominator-1 (ℚ.- y)))
--- --  ℤ+
--- --  ℚ.ℚ.numerator (ℚ.- y) ℤ.* suc (ℚ.ℚ.denominator-1 x))
--- --  (suc
--- --  (ℚ.ℚ.denominator-1 (ℚ.- y) ℕ.+
--- --   ℚ.ℚ.denominator-1 x ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- y))))
+--           x - y evaluates to
+-- ℚ.reduce
+-- (ℚ.ℚ.numerator x ℤ.* (+ suc (ℚ.ℚ.denominator-1 (ℚ.- y)))
+--  ℤ+
+--  ℚ.ℚ.numerator (ℚ.- y) ℤ.* suc (ℚ.ℚ.denominator-1 x))
+--  (suc
+--  (ℚ.ℚ.denominator-1 (ℚ.- y) ℕ.+
+--   ℚ.ℚ.denominator-1 x ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- y))))
 
--- -- absredlem : (z : ℤ)(n : ℕ) -> (ℚ.∣ (ℚ.reduce z n) ∣ ≡ ℚ.reduce (+ ℤ.∣ z ∣) n)
--- -- absredlem z n = refl
+-- absredlem : (z : ℤ)(n : ℕ) -> (ℚ.∣ (ℚ.reduce z n) ∣ ≡ ℚ.reduce (+ ℤ.∣ z ∣) n)
+-- absredlem z n = refl
 
--- -- reducelem : (z : ℤ)(n : ℕ) -> (ℚ.- (ℚ.reduce z n) ≡ ℚ.reduce (ℤ.- z) n)
--- -- reducelem -[1+ n₁ ] n₂ = {!refl!}
--- -- reducelem (+ zero) n₂ = {!!}
--- -- reducelem (+ suc n₁) n₂ = {!!}
+-- reducelem : (z : ℤ)(n : ℕ) -> (ℚ.- (ℚ.reduce z n) ≡ ℚ.reduce (ℤ.- z) n)
+-- reducelem -[1+ n₁ ] n₂ = {!refl!}
+-- reducelem (+ zero) n₂ = {!!}
+-- reducelem (+ suc n₁) n₂ = {!!}
 
--- -- ---Problemet är att det är högerledet vi vill ändra på!
+-- ---Problemet är att det är högerledet vi vill ändra på!
 
--- -- lemNeed : (x : ℚ) -> (y : ℚ) -> (ℚ.- (x ℚ.- y) ≡ ℚ.reduce ((ℚ.numerator y) ℤ.* + suc (ℚ.denominator-1 x) ℤ.- 
--- --      ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y))
--- --      (suc (ℚ.denominator-1 y) ℕ.* suc (ℚ.denominator-1 x)))
--- -- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!} --cong (λ a -> (ℚ.- a)) (Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂))
--- -- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
--- -- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ (suc n₂)) d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ zero) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ zero) d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ zero) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = {!!}
--- -- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = trans (cong (λ a -> (ℚ.- a)) (Lemm (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂))) {!cong (λ a -> ℚ.reduce a ((suc (ℚ.denominator-1 y)) ℤ.* (suc (ℚ.denominator-1 x)))) (nomlemma )!}
+-- lemNeed : (x : ℚ) -> (y : ℚ) -> (ℚ.- (x ℚ.- y) ≡ ℚ.reduce ((ℚ.numerator y) ℤ.* + suc (ℚ.denominator-1 x) ℤ.- 
+--      ℚ.numerator x ℤ.* + suc (ℚ.denominator-1 y))
+--      (suc (ℚ.denominator-1 y) ℕ.* suc (ℚ.denominator-1 x)))
+-- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!} --cong (λ a -> (ℚ.- a)) (Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂))
+-- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
+-- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ (suc n₂)) d₂ c₂) = {!!}
+-- lemNeed (qcon (+ zero) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
+-- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
+-- lemNeed (qcon (+ zero) d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
+-- lemNeed (qcon (+ zero) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = {!!}
+-- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ zero) d₂ c₂) = {!!}
+-- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = {!!}
+-- lemNeed (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂) = trans (cong (λ a -> (ℚ.- a)) (Lemm (qcon (+ suc n₁) d₁ c₁) (qcon (+ suc n₂) d₂ c₂))) {!cong (λ a -> ℚ.reduce a ((suc (ℚ.denominator-1 y)) ℤ.* (suc (ℚ.denominator-1 x)))) (nomlemma )!}
 
--- -- -- subst : (A : Set) -> (B : A -> Set) -> (x y : A) -> (x ≡ y) -> (B x -> B y)
--- -- -- subst A B x .x refl p = p
+-- -- subst : (A : Set) -> (B : A -> Set) -> (x y : A) -> (x ≡ y) -> (B x -> B y)
+-- -- subst A B x .x refl p = p
 
--- -- Lemm (qcon (+ n₁) d₁ c₁) (qcon (+ n₂) d₂ c₂) = {!subst Lemm (delemma x) d₂!}
--- -- Lemm (qcon (+ n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
--- -- Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ n₂) d₂ c₂) = {!!}
--- -- Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
+-- Lemm (qcon (+ n₁) d₁ c₁) (qcon (+ n₂) d₂ c₂) = {!subst Lemm (delemma x) d₂!}
+-- Lemm (qcon (+ n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
+-- Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ n₂) d₂ c₂) = {!!}
+-- Lemm (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) = {!!}
 
--- -- -------------------____TRANS_________-----------------------------
-
-
-
-
-
--- -- --------------------------------
-
--- -- ?0 : ℚ.-
--- -- ℚ.reduce
--- -- ((ℤ.sign (+ n₁) .Data.Sign.S* .Data.Sign.Sign.+ ◃
--- --   ℤ.∣ + n₁ ∣ ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂)))
--- --  ℤ+
--- --  (ℤ.sign (ℚ.ℚ.numerator (ℚ.- qcon (+ suc n₂) d₂ c₂)) .Data.Sign.S*
--- --   .Data.Sign.Sign.+
--- --   ◃ ℤ.∣ ℚ.ℚ.numerator (ℚ.- qcon (+ suc n₂) d₂ c₂) ∣ ℕ.* suc d₁))
--- -- (suc
--- --  (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂) ℕ.+
--- --   d₁ ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂))))
--- -- ≡ qcon (+ n) d c
-
-
--- -- --lemNeed to show - (x - y) ≡ (y - x)
--- -- lemNeed : (x : ℚ) -> (y : ℚ) -> (ℚ.- (x ℚ.- y) ≡ y ℚ.- x)
--- -- lemNeed x y with x - y
--- -- ... | (qcon (+ n) d c) = {!!}
-
--- -- lemNeed (qcon (+ n₁) d₁ c₁) (qcon (+ n₂) d₂ c₂) | (qcon (+ n) d c) = {!!}
--- -- lemNeed (qcon (+ n₁) d₁ c₁) (qcon (+ zero) d₂ c₂) | (qcon (+ n) d c) = {!!}
--- -- lemNeed (qcon (+ n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) | (qcon (+ n) d c) = {!!}
--- -- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ n₂) d₂ c₂) | (qcon (+ n) d c) = {!!}
--- -- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) | (qcon (+ n) d c) = {!!}
-
-
--- -- ... | (qcon -[1+ n ] d c) = {!!}
-
--- -- Maybe we can go straight to |x + y| = ||
-
-
-
--- -- --lemAnd abs(x) ≡ abs (-x)
--- -- --Lemma showing that |x - y| = |y- x|
--- -- diflem : {x : ℚ} {y : ℚ} -> (∣ (x - y) ∣ ≡ ∣ (y - x) ∣)
--- -- diflem {x} {y} = trans lemAnd (cong ∣_∣ lemNeed)
-
--- -- Transitivity
-
--- -- ≡--
-
-
--- -- -- --Examples
-
--- -- -- --Constructs a sequence of rationals approaching pi/4
--- -- -- LeibnizPi : ℕ -> ℚ
--- -- -- LeibnizPi zero = + 1 ÷ 1
--- -- -- LeibnizPi (suc n) = LeibnizPi n + (-[1+ 0 ] ^ (suc n) // suc ((suc n) ℕ.* 2))
-
-
--- -- -- -- --Proof that Leib-pi is regular
--- -- -- -- regLeibnizPi : (n m : ℕ) -> ∣ (LeibnizPi n) - (LeibnizPi m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}  + (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))}
--- -- -- -- regLeibnizPi n m with compare n m
--- -- -- -- regLeibnizPi n m | equal n = ?
--- -- -- -- regLeibnizPi n m | greater n m = ?
--- -- -- -- regLeibnizPi n m | less n m = ?
-
--- -- -- ---OTHER APPROACH
-
--- -- -- --Lemma proving that a natural number minus itself is zero
--- -- -- n-lem : (n : ℕ) -> (n ℤ.⊖ n ≡ + zero)
--- -- -- n-lem zero = refl
--- -- -- n-lem (suc n) = n-lem n
-
--- -- --  --Lemma proving that an integer 
--- -- -- z-lem : (i : ℤ) -> (i ℤ.+ ℤ.- i ≡ + zero)
--- -- -- z-lem (+ ℕ.suc n) = n-lem (suc n)
--- -- -- z-lem (+ zero) = refl
--- -- -- z-lem -[1+ n ] = n-lem (suc n)
-
--- -- -- -- negative zero is positive zero
--- -- -- zerolemma : (+ zero ÷ 1) ≡ ℚ.- (+ zero ÷ 1)
--- -- -- zerolemma = refl
-
-
-
--- -- -- --The denominator of - +zero / d is d
-
-
--- -- -- subst : (A : Set) -> (B : A -> Set) -> (x y : A) -> (x ≡ y) -> (B x -> B y)
--- -- -- subst A B x .x refl p = p
-
--- -- -- equisym : {A : Set} {x y : A} -> (x ≡ y) -> (y ≡ x)
--- -- -- equisym refl = refl
-
-
-
--- -- -- --The denominator of x and -x are the same
-
--- -- --The nominator of -(p/q) is -p
--- -- nomlemma : (x : ℚ) -> (ℚ.numerator (ℚ.- x) ≡ ℤ.- ℚ.numerator (x))
--- -- nomlemma x with ℚ.numerator x | ℚ.denominator-1 x | toWitness (ℚ.isCoprime x)
--- -- ... | -[1+ n ] | d | c = refl
--- -- ... | + 0       | d | c = subst  0 d (sinj (equisym (0-coprimeTo-1 c))) refl
--- -- ... | + ℕ.suc n | d | c = refl
+-- -------------------____TRANS_________-----------------------------
 
 
 
 
--- -- -- -- --Proof of additive inverse of rational numbers
--- -- -- -- --addinv : (x : ℚ) -> (x - x ≡ (+ zero ÷ 1))
--- -- -- -- --addinv x with ℚ.numerator x | ℚ.denominator-1 x | toWitness (ℚ.isCoprime x)
--- -- -- -- --...| n | d | c = {!!}
+
+-- --------------------------------
+
+-- ?0 : ℚ.-
+-- ℚ.reduce
+-- ((ℤ.sign (+ n₁) .Data.Sign.S* .Data.Sign.Sign.+ ◃
+--   ℤ.∣ + n₁ ∣ ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂)))
+--  ℤ+
+--  (ℤ.sign (ℚ.ℚ.numerator (ℚ.- qcon (+ suc n₂) d₂ c₂)) .Data.Sign.S*
+--   .Data.Sign.Sign.+
+--   ◃ ℤ.∣ ℚ.ℚ.numerator (ℚ.- qcon (+ suc n₂) d₂ c₂) ∣ ℕ.* suc d₁))
+-- (suc
+--  (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂) ℕ.+
+--   d₁ ℕ.* suc (ℚ.ℚ.denominator-1 (ℚ.- qcon (+ suc n₂) d₂ c₂))))
+-- ≡ qcon (+ n) d c
+
+
+-- --lemNeed to show - (x - y) ≡ (y - x)
+-- lemNeed : (x : ℚ) -> (y : ℚ) -> (ℚ.- (x ℚ.- y) ≡ y ℚ.- x)
+-- lemNeed x y with x - y
+-- ... | (qcon (+ n) d c) = {!!}
+
+-- lemNeed (qcon (+ n₁) d₁ c₁) (qcon (+ n₂) d₂ c₂) | (qcon (+ n) d c) = {!!}
+-- lemNeed (qcon (+ n₁) d₁ c₁) (qcon (+ zero) d₂ c₂) | (qcon (+ n) d c) = {!!}
+-- lemNeed (qcon (+ n₁) d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) | (qcon (+ n) d c) = {!!}
+-- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon (+ n₂) d₂ c₂) | (qcon (+ n) d c) = {!!}
+-- lemNeed (qcon -[1+ n₁ ] d₁ c₁) (qcon -[1+ n₂ ] d₂ c₂) | (qcon (+ n) d c) = {!!}
+
+
+-- ... | (qcon -[1+ n ] d c) = {!!}
+
+-- Maybe we can go straight to |x + y| = ||
 
 
 
--- -- ---------ALTERNATE RATIONAL CONSTRUCTOR-----------------------
+-- --lemAnd abs(x) ≡ abs (-x)
+-- --Lemma showing that |x - y| = |y- x|
+-- diflem : {x : ℚ} {y : ℚ} -> (∣ (x - y) ∣ ≡ ∣ (y - x) ∣)
+-- diflem {x} {y} = trans lemAnd (cong ∣_∣ lemNeed)
 
--- -- -- --Creates a rational number in reduced form (no co-prime proof is needed)
--- -- -- infixl 6 _//_
--- -- -- _//_ : ℤ -> (denominator : ℕ) -> {≢0 : False (ℕ._≟_ denominator 0)} -> ℚ
--- -- -- (z // zero) {≢0 = ()}
--- -- -- z // suc n = (z ÷ 1) {fromWitness (λ {i} → sym(1-coprimeTo (ℤ.∣ z ∣)))} * ( + 1  ÷ suc n) {fromWitness (λ {i} → 1-coprimeTo (suc n))}
+-- Transitivity
 
--- -- -- --Easier version of addition of rationals, using  _//_ to create the result.
--- -- -- _+_ : ℚ -> ℚ -> ℚ
--- -- -- p₁ + p₂ =
--- -- --   let n₁ = ℚ.numerator p₁
--- -- --       d₁ = ℕ.suc (ℚ.denominator-1 p₁)
--- -- --       n₂ = ℚ.numerator p₂
--- -- --       d₂ = ℕ.suc (ℚ.denominator-1 p₂)
--- -- --       n = (n₁ ℤ.* + d₂) ℤ.+ (n₂ ℤ.* + d₁)
--- -- --       d = d₁ ℕ.* d₂
--- -- --   in n // d
+-- ≡--
 
--- -- -- --Subtraction of rationals 
 
--- -- -- _-_ : ℚ -> ℚ -> ℚ
--- -- -- p₁ - p₂ = p₁ + (ℚ.- p₂)
+-- -- --Examples
+
+-- -- --Constructs a sequence of rationals approaching pi/4
+-- -- LeibnizPi : ℕ -> ℚ
+-- -- LeibnizPi zero = + 1 ÷ 1
+-- -- LeibnizPi (suc n) = LeibnizPi n + (-[1+ 0 ] ^ (suc n) // suc ((suc n) ℕ.* 2))
+
+
+-- -- -- --Proof that Leib-pi is regular
+-- -- -- regLeibnizPi : (n m : ℕ) -> ∣ (LeibnizPi n) - (LeibnizPi m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}  + (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))}
+-- -- -- regLeibnizPi n m with compare n m
+-- -- -- regLeibnizPi n m | equal n = ?
+-- -- -- regLeibnizPi n m | greater n m = ?
+-- -- -- regLeibnizPi n m | less n m = ?
+
+-- -- ---OTHER APPROACH
+
+-- -- --Lemma proving that a natural number minus itself is zero
+-- -- n-lem : (n : ℕ) -> (n ℤ.⊖ n ≡ + zero)
+-- -- n-lem zero = refl
+-- -- n-lem (suc n) = n-lem n
+
+-- --  --Lemma proving that an integer 
+-- -- z-lem : (i : ℤ) -> (i ℤ.+ ℤ.- i ≡ + zero)
+-- -- z-lem (+ ℕ.suc n) = n-lem (suc n)
+-- -- z-lem (+ zero) = refl
+-- -- z-lem -[1+ n ] = n-lem (suc n)
+
+-- -- -- negative zero is positive zero
+-- -- zerolemma : (+ zero ÷ 1) ≡ ℚ.- (+ zero ÷ 1)
+-- -- zerolemma = refl
+
+
+
+-- -- --The denominator of - +zero / d is d
+
+
+-- -- subst : (A : Set) -> (B : A -> Set) -> (x y : A) -> (x ≡ y) -> (B x -> B y)
+-- -- subst A B x .x refl p = p
+
+-- -- equisym : {A : Set} {x y : A} -> (x ≡ y) -> (y ≡ x)
+-- -- equisym refl = refl
+
+
+
+-- -- --The denominator of x and -x are the same
+
+-- --The nominator of -(p/q) is -p
+-- nomlemma : (x : ℚ) -> (ℚ.numerator (ℚ.- x) ≡ ℤ.- ℚ.numerator (x))
+-- nomlemma x with ℚ.numerator x | ℚ.denominator-1 x | toWitness (ℚ.isCoprime x)
+-- ... | -[1+ n ] | d | c = refl
+-- ... | + 0       | d | c = subst  0 d (sinj (equisym (0-coprimeTo-1 c))) refl
+-- ... | + ℕ.suc n | d | c = refl
+
+
+
+
+-- -- -- --Proof of additive inverse of rational numbers
+-- -- -- --addinv : (x : ℚ) -> (x - x ≡ (+ zero ÷ 1))
+-- -- -- --addinv x with ℚ.numerator x | ℚ.denominator-1 x | toWitness (ℚ.isCoprime x)
+-- -- -- --...| n | d | c = {!!}
+
+
+
+-- ---------ALTERNATE RATIONAL CONSTRUCTOR-----------------------
+
+-- -- --Creates a rational number in reduced form (no co-prime proof is needed)
+-- -- infixl 6 _//_
+-- -- _//_ : ℤ -> (denominator : ℕ) -> {≢0 : False (ℕ._≟_ denominator 0)} -> ℚ
+-- -- (z // zero) {≢0 = ()}
+-- -- z // suc n = (z ÷ 1) {fromWitness (λ {i} → sym(1-coprimeTo (ℤ.∣ z ∣)))} * ( + 1  ÷ suc n) {fromWitness (λ {i} → 1-coprimeTo (suc n))}
+
+-- -- --Easier version of addition of rationals, using  _//_ to create the result.
+-- -- _+_ : ℚ -> ℚ -> ℚ
+-- -- p₁ + p₂ =
+-- --   let n₁ = ℚ.numerator p₁
+-- --       d₁ = ℕ.suc (ℚ.denominator-1 p₁)
+-- --       n₂ = ℚ.numerator p₂
+-- --       d₂ = ℕ.suc (ℚ.denominator-1 p₂)
+-- --       n = (n₁ ℤ.* + d₂) ℤ.+ (n₂ ℤ.* + d₁)
+-- --       d = d₁ ℕ.* d₂
+-- --   in n // d
+
+-- -- --Subtraction of rationals 
+
+-- -- _-_ : ℚ -> ℚ -> ℚ
+-- -- p₁ - p₂ = p₁ + (ℚ.- p₂)
