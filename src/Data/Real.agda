@@ -1,6 +1,6 @@
 module Data.Real where
 
-open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣; _≤?_; NonZero; normalize; decTotalOrder)
+open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣; _≤?_; NonZero; normalize; decTotalOrder; abslem)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_; sign) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Sign using (Sign)
 open import Data.Unit using (⊤; tt)
@@ -16,7 +16,7 @@ open import Algebra.Properties.Group using (⁻¹-involutive)
 open import Algebra using (CommutativeRing; Ring)
 open import Data.Integer.Properties using (commutativeRing; abs-◃)
 import Data.Nat.Coprimality as C using (sym; Coprime; coprime?; Bézout-coprime; 0-coprimeTo-1; 1-coprimeTo; coprime-gcd)
-open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂)
+open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂; cong-app)
 open import Relation.Binary.Core as BC using (Transitive)
 open import Data.Nat.GCD
 open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides; quotient)
@@ -27,7 +27,7 @@ record ℝ : Set where
   constructor Real
   field
     f : ℕ -> ℚ
-    reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))})
+    reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣ ≤ (qcon (+ 1) n (fromWitness (λ {i} → 1-coprimeTo (suc n)))) ℚ.+ (qcon (+ 1) m (fromWitness (λ {i} → 1-coprimeTo (suc m)))))
   ---------------------------------------EQUALITY-------------------------
 --Equality
 
@@ -36,14 +36,17 @@ record ℝ : Set where
 infix 4 _≃_
 
 _≃_ : Rel ℝ Level.zero
-x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤  ℚ.reduce (+ 2)(suc n))
+x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
 -- (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
 
 --Proof that this is an equivalence relation-------------------
 
 --Reflexity
-refl-lem : {x : ℝ} ->  ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f x n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
-refl-lem {x} = ℝ.reg x
+--refl≃ : {x : ℝ} ->  ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f x n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
+--refl≃ {x} = ℝ.reg x
+
+refl≃ : {x : ℝ} -> (x ≃ x)
+refl≃ {(Real f reg)} = reg
 
 minminlem : (z : ℤ) -> ((ℤ.- (ℤ.- z)) ≡ z)
 minminlem -[1+ n ] = refl
@@ -128,7 +131,49 @@ nonzerlem (suc a) (suc b) = tt
 symlem : (x y : ℚ) -> (ℚ.- (y ℚ.- x) ≡ x - y)
 symlem (qcon xn xd xc) (qcon yn yd yc) = trans (cong (λ a -> ℚ.- a) (ℚ.Lemm (qcon yn yd yc) (qcon xn xd xc))) (trans (cong (λ a -> a) (redlem (yn ℤ.* (+ suc xd) ℤ.- xn ℤ.* (+ suc yd))((suc yd) ℕ.* (suc xd)))) (trans (cong (λ a -> ℚ.reduce (a) (suc yd ℕ.* suc xd))(intlem (yn ℤ.* + suc xd) (xn ℤ.* + suc yd))) (trans (cong (λ a -> ℚ.reduce (xn ℤ.* + suc yd ℤ.- yn ℤ.* + suc xd)(suc (ℕ.pred a))) (*-comm (suc yd)(suc xd))) (cong (λ a -> a) (P.sym (ℚ.Lemm (qcon xn xd xc)(qcon yn yd yc))) )))) 
 
+Qabslem₁ : (x : ℚ) -> (ℚ.∣ ℚ.- x ∣ ≡ ℚ.∣ x ∣)
+Qabslem₁ (qcon -[1+ n ] d c) = ≃⇒≡ refl
+Qabslem₁ (qcon (+ zero) d c) = ≃⇒≡ refl
+Qabslem₁ (qcon (+ suc n) d c) = ≃⇒≡ refl
 
+Qabslem₂ : (x y : ℚ) -> (ℚ.∣ x - y ∣ ≡ ℚ.∣ y - x ∣)
+Qabslem₂ x y = trans (cong (λ a -> ℚ.∣ a ∣)(P.sym (symlem x y)))(cong (λ b -> b) (Qabslem₁ (y - x)))
+
+{-
+symm≃ : ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})) -> ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
+symm≃ (x ≃ y) = ?
+-}
+
+
+xyfunc : {x y : ℝ} -> ℕ -> ℚ
+xyfunc {x} {y} n = ∣ ℝ.f x n - ℝ.f y n ∣
+
+yxfunc : {x y : ℝ} -> ℕ -> ℚ
+yxfunc {x} {y} n = ∣ ℝ.f y n - ℝ.f x n ∣
+
+--foraln :  {x y : ℝ}-> ( xyfunc {x}{y}≡ yxfunc {x}{y})
+--foraln {x} {y} = cong (λ a -> a) (Qabslem₂ ? ? )
+
+nfunc : {n : ℕ} -> ℚ
+nfunc {n} = (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}
+
+ff : (x y : ℝ) {n : ℕ} -> ℚ
+ff  x y {n} = ∣ ℝ.f x n - ℝ.f y n ∣
+
+ff=ff : (x y : ℝ) -> {n : ℕ} -> (ff x y {n} ≡ ff y x {n})
+ff=ff x y {n} = Qabslem₂ (ℝ.f x n) (ℝ.f y n)
+
+ss : {x y : ℝ} (n : ℕ) -> ((∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}) ≡ (∣ ℝ.f y n - ℝ.f x n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
+ss {x} {y} n = cong (λ a -> a ≤ nfunc {n}) (Qabslem₂ (ℝ.f x n) (ℝ.f y n))
+
+sy : {x y : ℝ} -> ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})) -> ({m : ℕ} ->  (∣ ℝ.f y m - ℝ.f x m ∣ ≤ (+ 1 ÷ (suc m))  {fromWitness (λ {i} → 1-coprimeTo (suc m))} ℚ.+ (+ 1 ÷ suc m)  {fromWitness (λ {i} → 1-coprimeTo (suc m))}))
+sy {x} {y} xy = (λ {n} -> subst ((λ a -> a)) (ss {x}{y} n) (xy {n}) )
+--(subst ss {x}{y} n) (xy n))
+
+sym≃ : {x y : ℝ} -> ((x ≃ y) -> (y ≃ x))
+sym≃ {x}{y} = sy {x}{y}
+
+--{n : ℕ} -> (cong (λ a -> (a ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})) (Qabslem₂ (ℝ.f x n) (ℝ.f y n)))
 
 -- --(ℚ.reduce 
 --       (ℚ.numerator x ℤ.* + suc a ℤ.+ 
