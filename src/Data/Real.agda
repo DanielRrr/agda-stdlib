@@ -133,19 +133,23 @@ add≤ {p₁}{q₁}{p₂}{q₂} p₁≤q₁ p₂≤q₂ = {!!}
 arith : {p : ℚ} -> (p + p ≡ (+ 2 ÷ 1) * p)
 arith {qcon n d c} = {!!}
 
-arith₂ : (n : ℕ) -> ((qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))) ℚ.+ (qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))) ≡ (qcon (+ 1) (suc (n ℕ.+ n))(fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))) ℚ.+ (qcon (+ 1) (suc (n ℕ.+ n))(fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))) ℚ.+ (qcon (+ 1) (suc (n ℕ.+ n))(fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))) ℚ.+ (qcon (+ 1) (suc (n ℕ.+ n))(fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))))
+arith₂ : (n : ℕ) -> (((qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3)))) + (qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3))))) + ((qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3)))) +(qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3))))) ≡ (qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))))
 arith₂ n = {!refl!}
 
-LEMMA : {x y : ℝ} -> ({j : ℕ} -> ∃ λ Nⱼ -> ({n : ℕ} -> (Nⱼ ℕ.≤ n × (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j))))))) -> (x ≃ y)
+LEMMA : {x y : ℝ} -> ({j : ℕ} -> ∃ λ Nⱼ -> (∣ ℝ.f x Nⱼ - ℝ.f y Nⱼ ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j))))) -> (x ≃ y)
 LEMMA {x} {y} bev = {!!}
 
-Lemother : {x y : ℝ} -> (x ≃ y) -> ({j : ℕ} -> ∃ λ Nⱼ -> ({n : ℕ} -> (Nⱼ ℕ.≤ n × (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j)))))))
-Lemother {x} {y} xy = ?
+Lemother : {x y : ℝ} -> (x ≃ y) -> ({j : ℕ} -> ∃ λ Nⱼ -> (∣ ℝ.f x Nⱼ - ℝ.f y Nⱼ ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j)))))
+Lemother {x} {y} xy = {!!}
 --Lem≃ : 
 
+
+
 transs : {x y z : ℝ} -> (x ≃ y) -> (y ≃ z) -> (x ≃ z)
-transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ({!Nⱼ!} , (λ {n} -> ({!!} , DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (suc (j ℕ.+ j))) (ℝ.f y (suc (j ℕ.+ j))) (ℝ.f z (suc (j ℕ.+ j)))) {!add≤ (xy {suc (j ℕ.+ j)}) (yz {suc (j ℕ.+ j)})!}))))
---
+transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ((j ℕ.+ j ℕ.+ 3) , (subst (λ a -> ∣ ℝ.f x (j ℕ.+ j ℕ.+ 3) - ℝ.f z (j ℕ.+ j ℕ.+ 3) ∣ ≤ a) (arith₂ j) (DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (j ℕ.+ j ℕ.+ 3)) (ℝ.f y (j ℕ.+ j ℕ.+ 3)) (ℝ.f z (j ℕ.+ j ℕ.+ 3))) {!(add≤ (xy {j ℕ.+ j ℕ.+ 3}) (yz {j ℕ.+ j ℕ.+ 3}))!} ))))
+
+ --)))))
+--(arith₂ j) add≤ (xy {suc (j ℕ.+ j)}) (yz {suc (j ℕ.+ j)}) 
 -- {-
 -- symm≃ : ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})) -> ({n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))}))
 -- symm≃ (x ≃ y) = ?
