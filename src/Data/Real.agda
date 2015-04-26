@@ -1,5 +1,4 @@
 module Data.Real where
-
 open import Data.Sum
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷_; _≤_; *≤*; ≃⇒≡; _-_; _+_; qcon; ∣_∣; _≤?_; NonZero; normalize; decTotalOrder; abslem)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_; sign) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
@@ -25,6 +24,7 @@ open import Data.Nat.GCD
 open import Data.Empty 
 open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides; quotient)
 open import Data.Product
+open P.≡-Reasoning
 
 
 --Constructs a real number given a sequence approximating it and a proof that it is regular
@@ -97,7 +97,7 @@ symm {x}{y} xy = λ {n} -> subst (λ a -> a) (cong (λ a -> a ≤ (qcon (+ 1) n 
 QTot = IsTotalOrder.total (IsDecTotalOrder.isTotalOrder (DecTotalOrder.isDecTotalOrder ℚ.decTotalOrder))
 
 open _⊎_
-
+{-
 triang : (x y z : ℚ) -> (∣ x - z ∣ ≤ ∣ x - y ∣ + ∣ y - z ∣)
 triang x y z with QTot x y | QTot y z | QTot x z 
 triang x y z | inj₁ x₁ | inj₁ x₂ | inj₁ x₃ = {!!}
@@ -108,6 +108,7 @@ triang x y z | inj₂ y₁ | inj₁ x₁ | inj₁ x₂ = {!!}
 triang x y z | inj₂ y₁ | inj₁ x₁ | inj₂ y₂ = {!!}
 triang x y z | inj₂ y₁ | inj₂ y₂ | inj₁ x₁ = {!!}
 triang x y z | inj₂ y₁ | inj₂ y₂ | inj₂ y₃ = {!!}
+-}
 {-
 triang x y z | yes p | yes p₁ | no ¬p₂ = ⊥-elim (¬p₂ (DecTotalOrder.trans  ℚ.decTotalOrder p p₁))
 triang x y z | yes p | no ¬p₁ | yes p₂ = {!!}
@@ -130,23 +131,40 @@ triang (qcon (+ n) d₁ c₁) (qcon (+ n₁) d₂ c₂) (qcon (+ n₂) d₃ c₃
 add≤ : {p₁ q₁ p₂ q₂  : ℚ} -> (p₁ ≤ q₁) -> (p₂ ≤ q₂) -> (p₁ + p₂ ≤ q₁ + q₂)
 add≤ {p₁}{q₁}{p₂}{q₂} p₁≤q₁ p₂≤q₂ = {!!}
 
-arith : {p : ℚ} -> (p + p ≡ (+ 2 ÷ 1) * p)
-arith {qcon n d c} = {!!}
+
+
+--Finns antagligen nåt gcdlemma som visar det här:
+reducer : {a b : ℕ} -> (n : ℕ) -> (ℚ.reduce ((+ suc a) ℤ.* (+ suc n))((suc b) ℕ.* (suc n)) ≡ ℚ.reduce (+ (suc a))(suc b))
+reducer {a} {b} n = (begin {!!})
+
+l+* : (n : ℕ) -> ((n ℕ.* 2) ≡ (n ℕ.+ n))
+l+* zero = refl
+l+* (suc n) = {!!} --refl --(suc n) ℕ.+ (subst (λ a -> a) (l+* n))
+
+
+--arith : {n : ℕ} -> ((+ 1 ÷ (suc n)) + (+ 1 ÷ (suc n)) ≡ (+ 2 ÷ 1) * (+ 1 ÷ (suc n)))
+--arith {n} = 
+--  (begin reducer (suc n) (cong (λ a -> ℚ.reduce a (suc n)) l+* (suc n))
+
+l+*z : (n : ℤ) -> ((n ℤ.* + 2) ≡ (n ℤ.+ n))
+l+*z (+ zero) = refl
+l+*z (+ suc n) = {!!} --refl --(suc n) ℕ.+ (subst (λ a -> a) (l+* n))
+l+*z -[1+ n ] = {!!} --refl --(suc n) ℕ.+ (subst (λ a -> a) (l+* n))
+
+--Det här bevisets måste byggas på det tidigare
+--reducelem₂ : (n : ℕ) -> (ℚ.reduce ((+ suc (suc (n ℕ.+ n))) ℤ.+ (+ suc (suc (n ℕ.+ n))))((suc (suc (n ℕ.+ n))) ℕ.* (suc (suc (n ℕ.+ n)))) ≡ (qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))))
+--((qcon (+ 1) (suc (n ℕ.+ n)) (fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))) + (qcon (+ 1) (suc (n ℕ.+ n)) (fromWitness λ {i} → 1-coprimeTo (suc (suc (n ℕ.+ n))))) ≡ (qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))))
+--reducelem₂ n = trans (trans (cong (λ a -> ℚ.reduce a ((suc (suc (n ℕ.+ n))) ℕ.* (suc (suc (n ℕ.+ n))))) (P.sym (l+*z (+ suc (suc (n ℕ.+ n)))))) (trans (cong (λ a -> ℚ.reduce ((+ suc (suc (n ℕ.+ n)) ℤ.* (+ suc (suc (n ℕ.+ n))))) ((suc (suc (n ℕ.+ n))) ℕ.* (suc (suc (n ℕ.+ n))))) (P.sym (l+*z (+ suc (suc (n ℕ.+ n)))))) (cong (λ a -> a) (reducelem₁ 1 (suc (n ℕ.+ n))(suc (n ℕ.+ n))))))({!cong (λ a -> a) !} )-- trans (cong (λ a -> a) (reducelem₁ ? ? ?)) refl)
 
 arith₂ : (n : ℕ) -> (((qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3)))) + (qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3))))) + ((qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3)))) +(qcon (+ 1) (n ℕ.+ n ℕ.+ 3) (fromWitness λ {i} → 1-coprimeTo (suc (n ℕ.+ n ℕ.+ 3))))) ≡ (qcon (+ 1) n (fromWitness λ {i} → 1-coprimeTo (suc n))))
-arith₂ n = {!refl!}
+arith₂ n = 
+  (begin {!!})
 
 LEMMA : {x y : ℝ} -> ({j : ℕ} -> ∃ λ Nⱼ -> (∣ ℝ.f x Nⱼ - ℝ.f y Nⱼ ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j))))) -> (x ≃ y)
 LEMMA {x} {y} bev = {!!}
 
-Lemother : {x y : ℝ} -> (x ≃ y) -> ({j : ℕ} -> ∃ λ Nⱼ -> (∣ ℝ.f x Nⱼ - ℝ.f y Nⱼ ∣ ≤ (qcon (+ 1) j (fromWitness λ {i} → 1-coprimeTo (suc j)))))
-Lemother {x} {y} xy = {!!}
---Lem≃ : 
-
-
-
-transs : {x y z : ℝ} -> (x ≃ y) -> (y ≃ z) -> (x ≃ z)
-transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ((j ℕ.+ j ℕ.+ 3) , (subst (λ a -> ∣ ℝ.f x (j ℕ.+ j ℕ.+ 3) - ℝ.f z (j ℕ.+ j ℕ.+ 3) ∣ ≤ a) (arith₂ j) (DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (j ℕ.+ j ℕ.+ 3)) (ℝ.f y (j ℕ.+ j ℕ.+ 3)) (ℝ.f z (j ℕ.+ j ℕ.+ 3))) {!(add≤ (xy {j ℕ.+ j ℕ.+ 3}) (yz {j ℕ.+ j ℕ.+ 3}))!} ))))
+--transs : {x y z : ℝ} -> (x ≃ y) -> (y ≃ z) -> (x ≃ z)
+--transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ((j ℕ.+ j ℕ.+ 3) , (subst (λ a -> ∣ ℝ.f x (j ℕ.+ j ℕ.+ 3) - ℝ.f z (j ℕ.+ j ℕ.+ 3) ∣ ≤ a) (arith₂ j) (DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (j ℕ.+ j ℕ.+ 3)) (ℝ.f y (j ℕ.+ j ℕ.+ 3)) (ℝ.f z (j ℕ.+ j ℕ.+ 3))) ((add≤ (xy {j ℕ.+ j ℕ.+ 3}) (yz {j ℕ.+ j ℕ.+ 3}))) ))))
 
  --)))))
 --(arith₂ j) add≤ (xy {suc (j ℕ.+ j)}) (yz {suc (j ℕ.+ j)}) 
