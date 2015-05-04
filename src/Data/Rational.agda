@@ -47,13 +47,6 @@ record ℚ : Set where
   field
     numerator     : ℤ
     denominator-1 : ℕ
-    isCoprime     : True (C.coprime? ℤ.∣ numerator ∣ (suc denominator-1))
-
-  denominator : ℤ
-  denominator = + suc denominator-1
-
-  coprime : Coprime numerator denominator
-  coprime = toWitness isCoprime
 
 -- Constructs rational numbers. The arguments have to be in reduced
 -- form.
