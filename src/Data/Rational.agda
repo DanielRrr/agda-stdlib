@@ -117,36 +117,26 @@ normalize {m} {n} {ℕ.suc g} {_} {_}
                ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
                  y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))))
 
---gcd that gives a proof that g is zero if one of its inputs are.
+--gcd that gives a proof that g is NonZero if one of its inputs are NonZero
 gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
 gcd≢0 m n {m≢0} with gcd m n
 gcd≢0 m n {m≢0} | (0 , GCD.is (_ , 0n) _) with ℕDiv.0∣⇒≡0 0n
 gcd≢0 m .0 {()} | (0 , GCD.is (_ , 0n) _) | refl
 gcd≢0 m n {_} | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 
-{-
---Reduces a given quotient to its coprime form
+abslem : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
+abslem -[1+ n ] = refl
+abslem (+ 0) = refl
+abslem (+ suc n) = refl
 
-reduce :  ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-reduce (+ 0) d = (+ 0 ÷ 1)
-reduce n d {d≢0} with gcd ℤ.∣ n ∣ d
-reduce n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
-reduce n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-reduce n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} {d≢0} G
-reduce n  d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') = (qcon (sign n ◃ ℤ.∣ n' ∣) d' (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc d')) (P.sym (ℤ.abs-◃ (sign n) ℤ.∣ n' ∣)) (toWitness c'))))
--}
-wheretofindthislemma? : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
-wheretofindthislemma? (+ zero) = refl
-wheretofindthislemma? (+ suc n) = refl
-wheretofindthislemma? -[1+ z ] = refl
-
+--Negating rationals
 -_ : ℚ → ℚ
-- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))))
+- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (abslem n) (toWitness c))))
 
-redduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-redduce (+ 0) d = (+ 0 ÷ 1)
-redduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
-redduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
+reduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
+reduce (+ 0) d = (+ 0 ÷ 1)
+reduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
+reduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
 
 ------------------------------------------------------------------------------
 -- Operations on rationals: unary -, reciprocal, multiplication, addition
@@ -160,12 +150,6 @@ redduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d 
 -- improve on the current heuristics. I recorded this as a bug
 -- http://code.google.com/p/agda/issues/detail?id=1079
 
---- (qcon n d c) = ((ℤ.- n) ÷ (suc d)) {fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))}
-{-
-- (qcon -[1+ n ] d c) = (+ ℕ.suc n ÷ ℕ.suc d) {c}
-- (qcon (+ 0) d c) = (+ 0 ÷ suc d) {c}
-- (qcon (+ ℕ.suc n) d c) = (-[1+ n ]  ÷ ℕ.suc d) {c}
--}
 -- reciprocal: requires a proof that the numerator is not zero
 
 1/_ : (p : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p ∣} → ℚ
@@ -174,12 +158,10 @@ redduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d 
 1/_ (qcon -[1+ n₃ ] d₃ c₃) {n≢0} = (-[1+ d₃ ] ÷ (suc n₃)) {fromWitness (λ {i} → C.sym (toWitness c₃))}
 
 _*_ : ℚ -> ℚ -> ℚ
-(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = redduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
-
+(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
 
 _+_ : ℚ → ℚ → ℚ
-(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = redduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
-
+(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = reduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
 
 -- subtraction and division
 
@@ -192,7 +174,21 @@ _/_ p₁ p₂ {n≢0} = p₁ * (1/_ p₂ {n≢0})
 
 --absolute value of a rational number
 ∣_∣ : ℚ -> ℚ
-∣ p ∣ = (+ ℤ.∣ ℚ.numerator p ∣ ÷ ( suc (ℚ.denominator-1 p))) {ℚ.isCoprime p}
+∣ (qcon n d c) ∣ = (qcon (+ ℤ.∣ n ∣) d c)
+
+ --This lemma gives us a handy way of expressing x - y
+Lemm : (x y : ℚ) -> (x - y ≡ 
+      reduce (ℚ.numerator x ℤ.* ℚ.denominator y ℤ.- 
+      (ℚ.numerator y ℤ.* ℚ.denominator x))
+      (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
+Lemm (qcon -[1+ n ] xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon  xn xd xc) (qcon (+ zero) yd yc) = refl
+Lemm (qcon -[1+ n ] xd xc) (qcon (+ suc n₁) yd yc) = refl
+Lemm (qcon (+ zero) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon (+ 0) xd xc) (qcon (+ suc n₁) yd yc) = refl
+Lemm (qcon (+ suc n) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
+Lemm (qcon (+ suc n) xd xc) (qcon (+ suc n₁) yd yc) = refl
+
 
 -- conventional printed representation
 
