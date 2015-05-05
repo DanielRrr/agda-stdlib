@@ -31,8 +31,8 @@ open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst
 open P.≡-Reasoning
 
 infix  8 -_ 1/_
-infixl 7  _/_ _*_
-infixl 6 _-_ _+_
+infixl 7   _*_ _/_
+infixl 6  _+_ _-_
 
 ------------------------------------------------------------------------
 -- The definition
@@ -43,7 +43,7 @@ infixl 6 _-_ _+_
 -- suffice to use "isCoprime : Coprime numerator denominator".)
 
 record ℚ : Set where
-  constructor qcon
+  constructor _÷suc_
   field
     numerator     : ℤ
     denominator-1 : ℕ
@@ -51,34 +51,13 @@ record ℚ : Set where
 -- Constructs rational numbers. The arguments have to be in reduced
 -- form.
 
-infixl 7 _÷_
-
-_÷_ : (numerator : ℤ) (denominator : ℕ)
-      {coprime : True (C.coprime? ℤ.∣ numerator ∣ denominator)}
-      {≢0 : False (ℕ._≟_ denominator 0)} →
-      ℚ
-(n ÷ zero) {≢0 = ()}
-(n ÷ suc d) {c} =
-  record { numerator = n; denominator-1 = d; isCoprime = c }
-
-private
-
-  -- Note that the implicit arguments do not need to be given for
-  -- concrete inputs:
-
-  0/1 : ℚ
-  0/1 = + 0 ÷ 1
-
-  -½ : ℚ
-  -½ = (ℤ.- + 1) ÷ 2
-
 ------------------------------------------------------------------------
 -- Two useful lemmas to help with operations on rationals
 
 NonZero : ℕ → Set
 NonZero 0       = ⊥
 NonZero (suc _) = ⊤
-
+{-
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
 -- returns them normalized as 2 and 7 and a proof that they are coprime
 normalize : {m n g : ℕ} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
@@ -121,16 +100,16 @@ abslem : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
 abslem -[1+ n ] = refl
 abslem (+ 0) = refl
 abslem (+ suc n) = refl
-
+-}
 --Negating rationals
 -_ : ℚ → ℚ
-- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (abslem n) (toWitness c))))
-
+- n ÷suc d = (ℤ.- n) ÷suc d
+{-
 reduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
 reduce (+ 0) d = (+ 0 ÷ 1)
 reduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
 reduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
-
+-}
 ------------------------------------------------------------------------------
 -- Operations on rationals: unary -, reciprocal, multiplication, addition
 
@@ -146,17 +125,20 @@ reduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {
 -- reciprocal: requires a proof that the numerator is not zero
 
 1/_ : (p : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p ∣} → ℚ
-1/_ (qcon (+ suc n₁) d₁ c₁) = ((+ suc d₁) ÷ (suc n₁)) {fromWitness (λ {i} → C.sym (toWitness c₁))}
-1/_ (qcon (+ zero) d₂ c₂) {()}
-1/_ (qcon -[1+ n₃ ] d₃ c₃) {n≢0} = (-[1+ d₃ ] ÷ (suc n₃)) {fromWitness (λ {i} → C.sym (toWitness c₃))}
+1/_ ((+ 0) ÷suc d) {()}
+1/_ ((+ suc n) ÷suc d) = (+ suc d) ÷suc n
+1/_ (-[1+ n ] ÷suc d) = -[1+ d ] ÷suc n
+
+--_*_ : ℚ -> ℚ -> ℚ
+--(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
 
 _*_ : ℚ -> ℚ -> ℚ
-(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
+(n₁ ÷suc d₁) * (n₂ ÷suc d₂) = ((n₁ ℤ.* n₂) ÷suc (ℕ.pred (suc d₁ ℕ.* (suc d₂))))
 
-_+_ : ℚ → ℚ → ℚ
-(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = reduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
+_+_ :  ℚ -> ℚ -> ℚ
+(n₁ ÷suc d₁) + (n₂ ÷suc d₂) =  ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁))) ÷suc (ℕ.pred ((suc d₁) ℕ.* (suc d₂)))
 
--- subtraction and division
+ -- subtraction and division
 
 _-_ : ℚ → ℚ → ℚ
 p₁ - p₂ = p₁ + (- p₂)
@@ -167,10 +149,10 @@ _/_ p₁ p₂ {n≢0} = p₁ * (1/_ p₂ {n≢0})
 
 --absolute value of a rational number
 ∣_∣ : ℚ -> ℚ
-∣ (qcon n d c) ∣ = (qcon (+ ℤ.∣ n ∣) d c)
+∣ n ÷suc d ∣ = (+ ℤ.∣ n ∣) ÷suc d
 
  --This lemma gives us a handy way of expressing x - y
-Lemm : (x y : ℚ) -> (x - y ≡ 
+{-Lemm : (x y : ℚ) -> (x - y ≡ 
       reduce (ℚ.numerator x ℤ.* ℚ.denominator y ℤ.- 
       (ℚ.numerator y ℤ.* ℚ.denominator x))
       (suc (ℚ.denominator-1 x) ℕ.* suc (ℚ.denominator-1 y)))
@@ -181,7 +163,7 @@ Lemm (qcon (+ zero) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
 Lemm (qcon (+ 0) xd xc) (qcon (+ suc n₁) yd yc) = refl
 Lemm (qcon (+ suc n) xd xc) (qcon -[1+ n₁ ] yd yc) = refl
 Lemm (qcon (+ suc n) xd xc) (qcon (+ suc n₁) yd yc) = refl
-
+-}
 
 -- conventional printed representation
 
@@ -196,8 +178,8 @@ show p = ℤ.show (ℚ.numerator p) ++ "/" ++ ℕshow (ℕ.suc (ℚ.denominator-
 infix 4 _≃_
 
 _≃_ : Rel ℚ Level.zero
-p ≃ q = numerator p ℤ.* denominator q ≡
-        numerator q ℤ.* denominator p
+p ≃ q = numerator p ℤ.* (+ suc (denominator-1 q)) ≡
+        numerator q ℤ.* (+ suc (denominator-1 p))
   where open ℚ
 
 -- _≃_ coincides with propositional equality.
@@ -206,21 +188,21 @@ p ≃ q = numerator p ℤ.* denominator q ≡
 ≡⇒≃ refl = refl
 
 ≃⇒≡ : _≃_ ⇒ _≡_
-≃⇒≡ {i = p} {j = q} =
-  helper (numerator p) (denominator-1 p) (isCoprime p)
-         (numerator q) (denominator-1 q) (isCoprime q)
+≃⇒≡ {i = p} {j = q} = 
+  helper (numerator p) (denominator-1 p) --(isCoprime p)
+         (numerator q) (denominator-1 q) --(isCoprime q)
   where
   open ℚ
 
-  helper : ∀ n₁ d₁ c₁ n₂ d₂ c₂ →
-           n₁ ℤ.* + suc d₂ ≡ n₂ ℤ.* + suc d₁ →
-           (n₁ ÷ suc d₁) {c₁} ≡ (n₂ ÷ suc d₂) {c₂}
-  helper n₁ d₁ c₁ n₂ d₂ c₂ eq
+  helper : ∀ n₁ d₁ n₂ d₂ →
+           n₁ ℤ.* (+ suc d₂) ≡ n₂ ℤ.* (+ suc d₁) →
+           (n₁ ÷suc d₁) ≡ (n₂ ÷suc d₂)
+  helper n₁ d₁ n₂ d₂  eq 
     with Poset.antisym ℕDiv.poset 1+d₁∣1+d₂ 1+d₂∣1+d₁
     where
     1+d₁∣1+d₂ : suc d₁ ∣ suc d₂
     1+d₁∣1+d₂ = ℤDiv.coprime-divisor (+ suc d₁) n₁ (+ suc d₂)
-                  (C.sym $ toWitness c₁) $
+                  --(C.sym $ toWitness c₁) $
                   ℕDiv.divides ℤ.∣ n₂ ∣ (begin
                     ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ cong ℤ.∣_∣ eq ⟩
                     ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ ℤ.abs-*-commute n₂ (+ suc d₁) ⟩
@@ -228,7 +210,7 @@ p ≃ q = numerator p ℤ.* denominator q ≡
 
     1+d₂∣1+d₁ : suc d₂ ∣ suc d₁
     1+d₂∣1+d₁ = ℤDiv.coprime-divisor (+ suc d₂) n₂ (+ suc d₁)
-                  (C.sym $ toWitness c₂) $
+--                  (C.sym $ toWitness c₂) $
                   ℕDiv.divides ℤ.∣ n₁ ∣ (begin
                     ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ cong ℤ.∣_∣ (P.sym eq) ⟩
                     ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ ℤ.abs-*-commute n₁ (+ suc d₂) ⟩
@@ -239,14 +221,15 @@ p ≃ q = numerator p ℤ.* denominator q ≡
   helper n  d c₁ .n .d c₂ eq | refl | refl with Bool.proof-irrelevance c₁ c₂
   helper n  d c  .n .d .c eq | refl | refl | refl = refl
 
+
 ------------------------------------------------------------------------
--- Equality is decidable
+--Equality is decidable
 
 infix 4 _≟_
 
 _≟_ : Decidable {A = ℚ} _≡_
-p ≟ q with ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≟
-           ℚ.numerator q ℤ.* ℚ.denominator p
+p ≟ q with ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≟
+           ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
 p ≟ q | yes pq≃qp = yes (≃⇒≡ pq≃qp)
 p ≟ q | no ¬pq≃qp = no (¬pq≃qp ∘ ≡⇒≃)
 
@@ -257,18 +240,18 @@ infix 4 _≤_ _≤?_
 
 data _≤_ : ℚ → ℚ → Set where
   *≤* : ∀ {p q} →
-        ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤
-        ℚ.numerator q ℤ.* ℚ.denominator p →
+        ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤
+        ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p)) →
         p ≤ q
 
 drop-*≤* : ∀ {p q} → p ≤ q →
-           ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤
-           ℚ.numerator q ℤ.* ℚ.denominator p
+           ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤
+           ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
 drop-*≤* (*≤* pq≤qp) = pq≤qp
 
 _≤?_ : Decidable _≤_
-p ≤? q with ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤?
-            ℚ.numerator q ℤ.* ℚ.denominator p
+p ≤? q with ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤?
+            ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
 p ≤? q | yes pq≤qp = yes (*≤* pq≤qp)
 p ≤? q | no ¬pq≤qp = no (λ { (*≤* pq≤qp) → ¬pq≤qp pq≤qp })
 
@@ -303,9 +286,9 @@ decTotalOrder = record
   trans {i = p} {j = q} {k = r} (*≤* le₁) (*≤* le₂)
     = *≤* (ℤ.cancel-*-+-right-≤ _ _ _
             (lemma
-              (ℚ.numerator p) (ℚ.denominator p)
-              (ℚ.numerator q) (ℚ.denominator q)
-              (ℚ.numerator r) (ℚ.denominator r)
+              (ℚ.numerator p) ((+ suc (ℚ.denominator-1 p)))
+              (ℚ.numerator q) ((+ suc (ℚ.denominator-1 q)))
+              (ℚ.numerator r) ((+ suc (ℚ.denominator-1 r)))
               (ℤ.*-+-right-mono (ℚ.denominator-1 r) le₁)
               (ℤ.*-+-right-mono (ℚ.denominator-1 p) le₂)))
     where
@@ -333,26 +316,26 @@ decTotalOrder = record
   total : Total _≤_
   total p q =
     [ inj₁ ∘′ *≤* , inj₂ ∘′ *≤* ]′
-      (ℤO.total (ℚ.numerator p ℤ.* ℚ.denominator q)
-                (ℚ.numerator q ℤ.* ℚ.denominator p))
+      (ℤO.total (ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)))
+                (ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))))
 
 ------------------------------------------------------------------------------
 -- A few constants and some small tests
 
-0ℚ 1ℚ : ℚ
-0ℚ = + 0 ÷ 1
-1ℚ = + 1 ÷ 1
+-- 0ℚ 1ℚ : ℚ
+-- 0ℚ = + 0 ÷ 1
+-- 1ℚ = + 1 ÷ 1
 
-private
+-- private
 
-  p₀ p₁ p₂ p₃ : ℚ
-  p₀ = + 1 ÷ 2
-  p₁ = + 1 ÷ 3
-  p₂ = -[1+ 2 ] ÷ 4
-  p₃ = + 3 ÷ 4
+--   p₀ p₁ p₂ p₃ : ℚ
+--   p₀ = + 1 ÷ 2
+--   p₁ = + 1 ÷ 3
+--   p₂ = -[1+ 2 ] ÷ 4
+--   p₃ = + 3 ÷ 4
 
-  test₀ = show p₂
-  test₁ = show (- p₂)
-  test₂ = show (1/ p₂)
-  test₃ = show (p₀ + p₀)
-  test₄ = show (p₁ * p₂)
+--   test₀ = show p₂
+--   test₁ = show (- p₂)
+--   test₂ = show (1/ p₂)
+--   test₃ = show (p₀ + p₀)
+--   test₄ = show (p₁ * p₂)
