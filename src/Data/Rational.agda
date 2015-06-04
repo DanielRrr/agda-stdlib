@@ -75,26 +75,18 @@ n ÷ (suc d) = n ÷suc (ℕ.pred d)
 NonZero : ℕ → Set
 NonZero 0       = ⊥
 NonZero (suc _) = ⊤
-{-
+
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
 -- returns them normalized as 2 and 7 and a proof that they are coprime
 normalize : {m n g : ℕ} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
             GCD m n g → ℚ
 normalize {m} {n} {0} {_} {()} _
-normalize {m} {n} {ℕ.suc g} {_} {_} G with Bézout.identity G
 normalize {m} {.0} {ℕ.suc g} {()} {_}
-  (GCD.is (divides p m≡pg' , divides 0 refl) _) | _
+  (GCD.is (divides p m≡pg' , divides 0 refl) _)
 normalize {m} {n} {ℕ.suc g} {_} {_}
-  (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.+- x y eq =
-    (qcon (+ p) (q) (fromWitness λ {i} -> (C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.+- x y
-               (begin
-                 ℕ.suc g ℕ.+ y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ y ℕ.* h) (P.sym n≡qg') ⟩
-                 ℕ.suc g ℕ.+ y ℕ.* n
-               ≡⟨ eq ⟩
-                 x ℕ.* m
-               ≡⟨ cong (λ h → x ℕ.* h) m≡pg' ⟩
-                 x ℕ.* (p ℕ.* ℕ.suc g) ∎)))))
+  (GCD.is (divides p m≡pg' , divides (suc q) n≡qg') _) =
+    ((+ p) ÷suc q)
+{-
 normalize {m} {n} {ℕ.suc g} {_} {_}
   (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.-+ x y eq =
     (qcon (+ p) (q) (fromWitness λ {i} -> (C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.-+ x y
@@ -106,14 +98,14 @@ normalize {m} {n} {ℕ.suc g} {_} {_}
                  y ℕ.* n
                ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
                  y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))))
-
+-}
 --gcd that gives a proof that g is NonZero if one of its inputs are NonZero
 gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
 gcd≢0 m n {m≢0} with gcd m n
 gcd≢0 m n {m≢0} | (0 , GCD.is (_ , 0n) _) with ℕDiv.0∣⇒≡0 0n
 gcd≢0 m .0 {()} | (0 , GCD.is (_ , 0n) _) | refl
 gcd≢0 m n {_} | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
-
+{-
 abslem : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
 abslem -[1+ n ] = refl
 abslem (+ 0) = refl
@@ -122,12 +114,12 @@ abslem (+ suc n) = refl
 --Negating rationals
 -_ : ℚ → ℚ
 - n ÷suc d = (ℤ.- n) ÷suc d
-{-
-reduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-reduce (+ 0) d = (+ 0 ÷ 1)
-reduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
-reduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
--}
+
+reduce : ℚ -> ℚ
+reduce ((+ 0) ÷suc d) = (+ 0 ÷ 1)
+reduce (-[1+ n ] ÷suc d) = - normalize {ℤ.∣ -[1+ n ] ∣} {suc d} {proj₁ (gcd≢0 (suc n) (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 (suc n) (suc d) {_}))} (proj₁( proj₂ (gcd≢0 (suc n) (suc d) {_})))
+reduce ((+ n) ÷suc d) = normalize {ℤ.∣ + n ∣} {suc d} {proj₁ (gcd≢0 n (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 n (suc d) {_}))} (proj₁( proj₂ (gcd≢0 n (suc d) {_})))
+
 ------------------------------------------------------------------------------
 -- Operations on rationals: unary -, reciprocal, multiplication, addition
 
