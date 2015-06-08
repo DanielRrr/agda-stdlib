@@ -1,7 +1,7 @@
 module Data.Real where
 
 open import Data.Sum
-open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; _-_; _+_; NonZero; ∣_∣; decTotalOrder; _≤_; *≤* ; _≤?_)
+open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; _-_; _+_; NonZero; ∣_∣; decTotalOrder; _≤_; *≤* ; _≤?_; traans; _÷_)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; -_; +≤+; _⊖_; sign; ◃-left-inverse) renaming (_+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Sign as S using (Sign; _*_)
 open import Data.Unit using (⊤; tt)
@@ -9,7 +9,7 @@ open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n; _+⋎_; pred)
 open import Data.Nat.Properties.Simple using (+-suc; +-comm; +-right-identity; *-comm; *-right-zero; distribʳ-*-+)
 open import Relation.Nullary.Decidable using (True; False; toWitness; fromWitness)
 open import Data.Nat.Coprimality using (1-coprimeTo; sym; 0-coprimeTo-1)
-open import Relation.Binary.Core using (_≡_; refl; Sym; Rel; Reflexive; _Preserves_⟶_)
+open import Relation.Binary.Core using (_≡_; refl; Sym; Rel; Reflexive; _Preserves₂_⟶_⟶_)
 open import Algebra.Structures using (IsCommutativeSemiring; IsCommutativeRing; IsCommutativeMonoid; IsRing; IsSemigroup)
 open import Relation.Binary.PropositionalEquality.Core using (trans; subst)
 import Level
@@ -40,13 +40,14 @@ record ℝ : Set where
     f : ℕ -> ℚ
     reg : {n m : ℕ} -> (∣ (f n) ℚ.- (f m) ∣) ℚ.≤ ((+ 1) ÷suc n) ℚ.+ ((+ 1) ÷suc m)
 
----------------------------------------EQUALITY-------------------------
---Equality
+------------------------------------------------------------------------
+-- Equality
 
---Equality of real numbers.
+-- Equality of real numbers.
 
 infix 4 _≃_
 
+--
 _≃_ : Rel ℝ Level.zero
 x ≃ y =  {n : ℕ} -> (∣ ℝ.f x n - ℝ.f y n ∣ ≤ ((+ 1) ÷suc n) ℚ.+ ((+ 1) ÷suc n))
 -- (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))} ℚ.+ (+ 1 ÷ (suc n))  {fromWitness (λ {i} → 1-coprimeTo (suc n))})
@@ -120,15 +121,17 @@ triang (qcon (+ n) d₁ c₁) (qcon -[1+ n₁ ] d₂ c₂) (qcon (+ n₂) d₃ c
 triang (qcon (+ n) d₁ c₁) (qcon (+ n₁) d₂ c₂) (qcon -[1+ n₂ ] d₃ c₃) = {!!}
 triang (qcon (+ n) d₁ c₁) (qcon (+ n₁) d₂ c₂) (qcon (+ n₂) d₃ c₃) = {!!}
 -}
-
+{-
 add≤ : {p₁ q₁ p₂ q₂  : ℚ} -> (p₁ ≤ q₁) -> (p₂ ≤ q₂) -> (p₁ + p₂ ≤ q₁ + q₂)
 add≤ {p₁}{q₁}{p₂}{q₂} p₁≤q₁ p₂≤q₂ = {!!}
-
-mll : (n : ℕ) -> (1 ℕ.* n  ≡ n)
-mll n = +-right-identity n
+-}
+_+-mono_ :  ℚ._+_ Preserves₂ ℚ._≤_ ⟶ ℚ._≤_ ⟶ ℚ._≤_
+_+-mono_ { (+ zero) ÷suc d} {n₁ ÷suc d₁}{n₂ ÷suc d₂}{n₃ ÷suc d₃} p₀≤p₁ p₂≤p₃ = {!!}
+_+-mono_ {(+ suc n) ÷suc d} {p₁}{p₂}{p₃} p₀≤p₁ p₂≤p₃ = {!!}
+_+-mono_ { -[1+ n ] ÷suc d} {p₁}{p₂}{p₃} p₀≤p₁ p₂≤p₃ = {!!}
 
 ml : (n : ℤ) -> ((+ 1) ℤ.* n  ≡ n)
-ml n = trans (cong (λ a -> (sign n ◃ a)) (mll ℤ.∣ n ∣)) (cong (λ a -> a) (◃-left-inverse n))
+ml n = trans (cong (λ a -> (sign n ◃ a)) (+-right-identity ℤ.∣ n ∣)) (cong (λ a -> a) (◃-left-inverse n))
 
 CS = IsRing.distrib (IsCommutativeRing.isRing (CommutativeRing.isCommutativeRing commutativeRing))
 
@@ -182,8 +185,44 @@ arith₁ n =
     (+ 2) ℤ.* ((+ suc n) ℤ.* (+ suc n))
   ∎
 
-
 -}
+
+arith₁  : (n : ℕ) -> ((+ 1) ÷suc n) + ((+ 1) ÷suc n) ℚ.≃ ((+ 2) ÷suc 0) ℚ.* ((+ 1) ÷suc n)
+arith₁ n = 
+  begin 
+    (((+ 1) ℤ.* (+ suc n)) ℤ.+ ((+ 1) ℤ.* (+ suc n))) ℤ.* (+ (suc 0 ℕ.* suc n)) ≡⟨ cong (λ x → (x ℤ.+ x) ℤ.* (+ (suc 0 ℕ.* suc n))) (ml (+ suc n)) ⟩  
+    ((+ suc n) ℤ.+ (+ suc n)) ℤ.* (+ (suc 0 ℕ.* suc n)) ≡⟨ cong (λ x → ((+ suc n) ℤ.+ (+ suc n)) ℤ.* (+ x)) (mll (suc n)) ⟩
+    ((+ suc n) ℤ.+ (+ suc n)) ℤ.* (+ suc n) ≡⟨ cong (λ a -> a ℤ.* (+ suc n)) (P.sym (l+*z (+ suc n))) ⟩
+    ((+ 2) ℤ.* (+ suc n)) ℤ.* (+ suc n) ≡⟨ assoc (+ 2) (+ suc n) (+ suc n) ⟩
+    (+ 2) ℤ.* + ((suc n) ℕ.* (suc n)) 
+  ∎
+  
+
+
+Q+sub : {p₁ p₂ p₃ p₄ : ℚ} -> (p₁ ℚ.≃ p₂) -> (p₃ ℚ.≃ p₄) -> (p₁ ℚ.+ p₃ ℚ.≃ p₂ ℚ.+ p₄)
+Q+sub {p₁} {p₂} {p₃} {p₄} p₁≃p₂ p₃≃p₄ = {!!}
+
+arith₃ : (n : ℕ) -> ((+ 1) ÷suc (suc (2 ℕ.* n)) ℚ.+ (+ 1) ÷suc (suc (2 ℕ.* n)) ℚ.≃ (+ 1) ÷suc n)
+arith₃ n = {!!}
+    {-begin 
+      ((+ 1) ℤ.* k ℤ.+ (+ 1) ℤ.* k) ℤ.* + suc n ≡⟨ {!cong (λ a -> (a ℤ.+ a ℤ.* + suc n)) (ml k)!} ⟩
+      (k ℤ.+ k) ℤ.* (+ suc n) ≡⟨ {!!} ⟩
+      ((+ 2) ℤ.* k) ℤ.* (+ suc n) ≡⟨ {!!} ⟩
+      k ℤ.* (+ 2) ℤ.* (+ suc n) ≡⟨ {!!} ⟩
+      k ℤ.* ((+ 2) ℤ.* (+ suc n)) ≡⟨ {!!} ⟩
+      k ℤ.* k ≡⟨ {!!} ⟩
+      (+ 1) ℤ.* (k ℤ.* k)
+    ∎-}
+    where
+      k = + suc (2 ℕ.* n ℕ.+ 1)
+
+arith₂ : (n : ℕ) -> (((+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3)) + ((+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3)) ℚ.≃ ((+ 1) ÷suc n))
+arith₂ n = {!!} --ℚ.traans (Q+sub {1÷k ℚ.+ 1÷k}{1÷j}{1÷k ℚ.+ 1÷k}{1÷j} (arith₃ j) (arith₃ j)) (arith₃ n) -- (arith₃ ?) (arith₃ ?)
+  where
+    j = suc (2 ℕ.* n)
+    k = suc (2 ℕ.* j)
+    1÷j = (+ 1) ÷suc j
+    1÷k = (+ 1) ÷suc k
 
 -- +-sym : (p q : ℚ) -> (p + q ℚ.≃ q + p)
 -- +-sym (n₁ ÷suc d₁) (n₂ ÷suc d₂) = cong₂ (λ a b -> (a ℤ.+ b)) {!!} {!!}
@@ -192,10 +231,6 @@ arith₁ n =
 -- +-assoc p q r = {!cong (λ a -> a ÷suc (dpdqdr)) ?!}
 --   where
 --     dpdqdr = ℕ.pred (ℚ.denominator-1 p) ℕ.* (ℚ.denominator-1 q) ℕ.* (ℚ.denominator-1 r)
-
-arith₂ : (n : ℕ) -> (((+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3)) + ((+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3)) ℚ.≃ ((+ 1) ÷suc n))
-arith₂ n =  {!!}
-
 {-
 arith₂ : (n : ℕ) -> ((+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3) + (+ 1) ÷suc (4 ℕ.* n ℕ.+ 3)  ℚ.≃ ((+ 1) ÷suc n))
 arith₂ n = 
@@ -231,7 +266,7 @@ triang x y z | inj₂ y₁ | inj₂ y₂ | inj₁ x₁ = {!!}
 triang x y z | inj₂ y₁ | inj₂ y₂ | inj₂ y₃ = {!!}
 
 transs : {x y z : ℝ} -> (x ≃ y) -> (y ≃ z) -> (x ≃ z)
-transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ((4 ℕ.* j ℕ.+ 3) , (DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (4 ℕ.* j ℕ.+ 3)) (ℝ.f y (4 ℕ.* j ℕ.+ 3)) (ℝ.f z (4 ℕ.* j ℕ.+ 3))) (DecTotalOrder.trans  ℚ.decTotalOrder (add≤ (xy {(4 ℕ.* j ℕ.+ 3)}) (yz {(4 ℕ.* j ℕ.+ 3)})) ((IsPreorder.reflexive (IsPartialOrder.isPreorder (IsTotalOrder.isPartialOrder (IsDecTotalOrder.isTotalOrder (DecTotalOrder.isDecTotalOrder ℚ.decTotalOrder)))) (arith₂ j)))) )))
+transs {x}{y}{z} xy yz = LEMMA {x}{z} (λ {j} -> ((4 ℕ.* j ℕ.+ 3) , (DecTotalOrder.trans  ℚ.decTotalOrder (triang (ℝ.f x (4 ℕ.* j ℕ.+ 3)) (ℝ.f y (4 ℕ.* j ℕ.+ 3)) (ℝ.f z (4 ℕ.* j ℕ.+ 3))) (DecTotalOrder.trans  ℚ.decTotalOrder ((xy {(4 ℕ.* j ℕ.+ 3)}) +-mono (yz {(4 ℕ.* j ℕ.+ 3)})) ((IsPreorder.reflexive (IsPartialOrder.isPreorder (IsTotalOrder.isPartialOrder (IsDecTotalOrder.isTotalOrder (DecTotalOrder.isDecTotalOrder ℚ.decTotalOrder)))) (arith₂ j)))) )))
 
 --(subst (λ a -> ∣ ℝ.f x (4 ℕ.* j ℕ.+ 3) - ℝ.f z (4 ℕ.* j ℕ.+ 3) ∣ ≤ a) (arith₂ j)
 -- --\refl

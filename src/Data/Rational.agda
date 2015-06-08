@@ -64,7 +64,7 @@ infixl 7 _÷_
 
 _÷_ : (n : ℤ) (d : ℕ) -> {≢0 : False (ℕ._≟_ d 0)} -> ℚ
 (n ÷ 0) {()}
-n ÷ (suc d) = n ÷suc (ℕ.pred d)
+n ÷ (suc d) = n ÷suc d
 
 -- Constructs rational numbers. The arguments have to be in reduced
 -- form.
@@ -143,7 +143,7 @@ reduce ((+ n) ÷suc d) = normalize {ℤ.∣ + n ∣} {suc d} {proj₁ (gcd≢0 n
 --(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = reduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
 
 _*_ : ℚ -> ℚ -> ℚ
-(n₁ ÷suc d₁) * (n₂ ÷suc d₂) = ((n₁ ℤ.* n₂) ÷suc (ℕ.pred (suc d₁ ℕ.* (suc d₂))))
+(n₁ ÷suc d₁) * (n₂ ÷suc d₂) = ((n₁ ℤ.* n₂) ÷ (suc d₁ ℕ.* suc d₂))
 {-
 _+_ :  ℚ -> ℚ -> ℚ
 (n₁ ÷suc d₁) + (n₂ ÷suc d₂) =  ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁))) ÷suc (ℕ.pred ((suc d₁) ℕ.* (suc d₂)))
@@ -371,7 +371,6 @@ decTotalOrder = record
               (ℤ.*-+-right-mono (ℚ.denominator-1 r) le₁)
               (ℤ.*-+-right-mono (ℚ.denominator-1 p) le₂)))
     where
-    --open Algebra.CommutativeRing ℤ.commutativeRing
 
     lemma : ∀ n₁ d₁ n₂ d₂ n₃ d₃ →
             n₁ ℤ.* d₂ ℤ.* d₃ ℤ.≤ n₂ ℤ.* d₁ ℤ.* d₃ →
