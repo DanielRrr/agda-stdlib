@@ -1,7 +1,8 @@
 module Data.Rational.Properties where
 
 open import Data.Sum
-open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; _-_; _+_; ∣_∣; decTotalOrder; _≤_; *≤* ; _≤?_; _÷_)
+open import Relation.Nullary.Decidable
+open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; _-_; _+_; ∣_∣; decTotalOrder; _≤_; *≤* ; _≤?_; _÷_; _≃_)
 open import Data.Integer as ℤ using (ℤ; +_ ; -[1+_]) renaming (_-_ to ℤ_-_; _+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Nat as ℕ using (ℕ; suc; zero; compare; z≤n; _+⋎_; pred) renaming (_≤_ to ℕ_≤_)
 open import Data.Nat.Properties.Simple using (+-comm; +-suc; +-right-identity; *-comm)
@@ -17,7 +18,9 @@ open CommutativeRing commutativeRing
   using ()
   renaming (distrib to ℤdistrib; +-assoc to ℤ+-assoc; *-assoc to ℤ*-assoc; *-comm to ℤ*-comm; +-comm to ℤ+-comm; +-isAbelianGroup to ℤ-+-isAbelianGroup; *-identity to ℤ*-identity)
 
+--Various lemmas about rational numbers
 
+--Lemmas helping to show symmetry of the equivalence relation defined on the real numbers
 ⊖-swap : ∀ a b → a ℤ.⊖ b ≡ ℤ.- (b ℤ.⊖ a)
 ⊖-swap zero    zero    = refl
 ⊖-swap (suc _) zero    = refl
@@ -35,26 +38,31 @@ open CommutativeRing commutativeRing
 ℤ-swap (+ suc n) (+ zero) = cong (λ a -> -[1+ a ]) (+-right-identity n)
 ℤ-swap (+ suc n) (+ suc n₁) = P.sym (⊖-swap n₁ n)
 
-ℚ-swap : (x y : ℚ) -> (ℚ.- (y ℚ.- x) ≡ x - y)
-ℚ-swap (-[1+ n₁ ] ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (-[1+ n₁ ] ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap (-[1+ n₁ ] ÷suc d₁) ((+ zero) ÷suc d₂) = cong (λ a -> (-[1+ n₁ ] ℤ.* (+ suc d₂)) ℚ.÷ suc (pred a))(*-comm (suc d₂) (suc d₁))
-ℚ-swap (-[1+ n₁ ] ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (-[1+ n₁ ] ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ zero) ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (+ zero ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ suc n₁) ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (+ suc n₁ ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ zero) ÷suc d₁) ((+ zero) ÷suc d₂) = cong (λ a -> (+ zero ℚ.÷ suc (pred a)))(*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ zero) ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (+ zero ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ suc n) ÷suc d₁) ((+ zero) ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (+ zero ℤ.* + suc d₁) (+ suc n ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
-ℚ-swap ((+ suc n₁) ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ℚ.÷ suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (+ suc n₁ ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap : (x y : ℚ) -> (- (y - x) ≡ x - y)
+ℚ-swap (-[1+ n₁ ] ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (-[1+ n₁ ] ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap (-[1+ n₁ ] ÷suc d₁) ((+ zero) ÷suc d₂) = cong (λ a -> (-[1+ n₁ ] ℤ.* (+ suc d₂)) ℚ.÷suc (pred a))(*-comm (suc d₂) (suc d₁))
+ℚ-swap (-[1+ n₁ ] ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (-[1+ n₁ ] ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ zero) ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (+ zero ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ suc n₁) ÷suc d₁) (-[1+ n₂ ] ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (-[1+ n₂ ] ℤ.* + suc d₁) (+ suc n₁ ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ zero) ÷suc d₁) ((+ zero) ÷suc d₂) = cong (λ a -> ((+ zero) ÷suc (pred a)))(*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ zero) ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (+ zero ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ suc n) ÷suc d₁) ((+ zero) ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (+ zero ℤ.* + suc d₁) (+ suc n ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
+ℚ-swap ((+ suc n₁) ÷suc d₁) ((+ suc n₂) ÷suc d₂) = cong₂ (λ a b -> (a ÷suc (pred b))) (ℤ-swap (+ suc n₂ ℤ.* + suc d₁) (+ suc n₁ ℤ.* + suc d₂)) (*-comm (suc d₂) (suc d₁))
 
-ℚabs₁ : (x : ℚ) -> (ℚ.∣ ℚ.- x ∣ ≡ ℚ.∣ x ∣)
+_⁻¹ : (n : ℕ) -> {≢0 : False (ℕ._≟_ n 0)} -> ℚ
+(n ⁻¹) {≢0} = ((+ 1) ÷ n) {≢0}
+
+ℚabs₁ : (x : ℚ) -> (∣ ℚ.- x ∣ ≡ ∣ x ∣)
 ℚabs₁ (-[1+ n ] ÷suc d₁) = refl
 ℚabs₁ ((+ zero) ÷suc d₁) = refl
 ℚabs₁ ((+ suc n) ÷suc d₁) = refl
 
-ℚabs₂ : (x y : ℚ) -> (ℚ.∣ x - y ∣ ≡ ℚ.∣ y - x ∣)
-ℚabs₂ x y = trans (cong ℚ.∣_∣ (P.sym (ℚ-swap x y) ))(ℚabs₁ (y - x))
+ℚabs₂ : (x y : ℚ) -> (∣ x - y ∣ ≡ ∣ y - x ∣)
+ℚabs₂ x y = trans (cong ∣_∣ (P.sym (ℚ-swap x y) ))(ℚabs₁ (y - x))
 
-+-exist :  ℚ._+_ Preserves₂ ℚ._≃_ ⟶ ℚ._≃_ ⟶ ℚ._≃_
+
+--Since the we have defined rationals without requireming coprimality, our equivalence relation, ≈, is not synonymous with ≡ and therefore we cannot use subst or cong to modify expressions. Instead, we have to show for every function defined on rationals that it preserves the equality relation.
++-exist :  _+_ Preserves₂ _≃_ ⟶ _≃_ ⟶ _≃_
 +-exist {p}{q}{x}{y} pq xy =  begin 
         (pn ℤ.* xd ℤ.+ xn ℤ.* pd) ℤ.* (qd ℤ.* yd) ≡⟨ proj₂ ℤdistrib (qd ℤ.* yd) (pn ℤ.* xd) (xn ℤ.* pd)   ⟩
         pn ℤ.* xd ℤ.* (qd ℤ.* yd) ℤ.+ xn ℤ.* pd ℤ.* (qd ℤ.* yd) ≡⟨ cong₂ ℤ._+_ (ℤ*-assoc pn xd (qd ℤ.* yd)) (ℤ*-assoc xn pd (qd ℤ.* yd)) ⟩
@@ -109,8 +117,8 @@ open CommutativeRing commutativeRing
     k = suc (j ℕ.+ j)
     1÷j = (+ 1) ÷suc j
     1÷k = (+ 1) ÷suc k
-    start = (1÷k ℚ.+ 1÷k) ℚ.+ (1÷k ℚ.+ 1÷k)
-    middle = 1÷j ℚ.+ 1÷j
+    start = (1÷k + 1÷k) + (1÷k + 1÷k)
+    middle = 1÷j + 1÷j
     end = (+ 1) ÷suc n
 
 ℚ≤lem : {m n : ℕ} -> ((+ 1) ÷suc (m ℕ.+ n) ≤ (+ 1) ÷suc m)
