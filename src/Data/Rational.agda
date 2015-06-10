@@ -6,7 +6,8 @@
 
 module Data.Rational where
 
-import Algebra
+import Data.Integer.Multiplication.Properties as Mul
+open import Algebra using (module CommutativeMonoid)
 import Data.Sign as S
 open import Data.Empty using (⊥)
 open import Data.Unit using (⊤; tt)
@@ -14,7 +15,7 @@ import Data.Bool.Properties as Bool
 open import Function
 open import Data.Product
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; sign)
-open import Data.Integer.Divisibility as ℤDiv using (Coprime)
+open import Data.Integer.Divisibility as ℤDiv using (_∣_; Coprime)
 import Data.Integer.Properties as ℤ
 open import Data.Nat.GCD
 open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides; quotient)
@@ -27,172 +28,103 @@ import Level
 open import Relation.Nullary.Decidable
 open import Relation.Nullary
 open import Relation.Binary
+open import Relation.Binary.Core using (_≢_)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂)
+open import Data.Integer.Properties using (cancel-*-right)
 open P.≡-Reasoning
+open CommutativeMonoid Mul.commutativeMonoid
+  using ()
+  renaming (assoc to *-assoc; comm to *-comm; identity to *-identity
+           ; isCommutativeMonoid to *-isCommutativeMonoid
+           ; isMonoid to *-isMonoid
+           )
 
 infix  8 -_ 1/_
-infixl 7  _/_ _*_
-infixl 6 _-_ _+_
+infixl 7   _*_ _/_
+infixl 6  _+_ _-_
 
 ------------------------------------------------------------------------
 -- The definition
 
--- Rational numbers in reduced form. Note that there is exactly one
--- representative for every rational number. (This is the reason for
--- using "True" below. If Agda had proof irrelevance, then it would
--- suffice to use "isCoprime : Coprime numerator denominator".)
+-- Rational numbers in reduced form. Note that we do not require the arguments to be given in their reduced form
 
 record ℚ : Set where
-  constructor qcon
+  constructor _÷suc_
   field
     numerator     : ℤ
     denominator-1 : ℕ
-    isCoprime     : True (C.coprime? ℤ.∣ numerator ∣ (suc denominator-1))
 
   denominator : ℤ
   denominator = + suc denominator-1
 
-  coprime : Coprime numerator denominator
-  coprime = toWitness isCoprime
-
--- Constructs rational numbers. The arguments have to be in reduced
--- form.
-
 infixl 7 _÷_
 
-_÷_ : (numerator : ℤ) (denominator : ℕ)
-      {coprime : True (C.coprime? ℤ.∣ numerator ∣ denominator)}
-      {≢0 : False (ℕ._≟_ denominator 0)} →
-      ℚ
-(n ÷ zero) {≢0 = ()}
-(n ÷ suc d) {c} =
-  record { numerator = n; denominator-1 = d; isCoprime = c }
-
-private
-
-  -- Note that the implicit arguments do not need to be given for
-  -- concrete inputs:
-
-  0/1 : ℚ
-  0/1 = + 0 ÷ 1
-
-  -½ : ℚ
-  -½ = (ℤ.- + 1) ÷ 2
+_÷_ : (n : ℤ) (d : ℕ) -> {≢0 : False (ℕ._≟_ d 0)} -> ℚ
+(n ÷ 0) {()}
+n ÷ (suc d) = n ÷suc d
 
 ------------------------------------------------------------------------
--- Two useful lemmas to help with operations on rationals
+--  Functions for reducing rational numbers to their coprime form
 
-NonZero : ℕ → Set
-NonZero 0       = ⊥
-NonZero (suc _) = ⊤
 
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
--- returns them normalized as 2 and 7 and a proof that they are coprime
-normalize : {m n g : ℕ} → {n≢0 : NonZero n} → {g≢0 : NonZero g} →
+-- returns them normalized as 2 and 7
+normalize : {m n g : ℕ} → {n≢0 : False (ℕ._≟_ n 0)} → {g≢0 : False (ℕ._≟_ g 0)} →
             GCD m n g → ℚ
 normalize {m} {n} {0} {_} {()} _
-normalize {m} {n} {ℕ.suc g} {_} {_} G with Bézout.identity G
 normalize {m} {.0} {ℕ.suc g} {()} {_}
-  (GCD.is (divides p m≡pg' , divides 0 refl) _) | _
+  (GCD.is (divides p m≡pg' , divides 0 refl) _)
 normalize {m} {n} {ℕ.suc g} {_} {_}
-  (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.+- x y eq =
-    (qcon (+ p) (q) (fromWitness λ {i} -> (C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.+- x y
-               (begin
-                 ℕ.suc g ℕ.+ y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ y ℕ.* h) (P.sym n≡qg') ⟩
-                 ℕ.suc g ℕ.+ y ℕ.* n
-               ≡⟨ eq ⟩
-                 x ℕ.* m
-               ≡⟨ cong (λ h → x ℕ.* h) m≡pg' ⟩
-                 x ℕ.* (p ℕ.* ℕ.suc g) ∎)))))
-normalize {m} {n} {ℕ.suc g} {_} {_}
-  (GCD.is (divides p m≡pg' , divides (ℕ.suc q) n≡qg') _) | Bézout.-+ x y eq =
-    (qcon (+ p) (q) (fromWitness λ {i} -> (C.Bézout-coprime {p} {ℕ.suc q} {g} (Bézout.-+ x y
-               (begin
-                 ℕ.suc g ℕ.+ x ℕ.* (p ℕ.* ℕ.suc g)
-               ≡⟨ cong (λ h → ℕ.suc g ℕ.+ x ℕ.* h) (P.sym m≡pg') ⟩
-                 ℕ.suc g ℕ.+ x ℕ.* m
-               ≡⟨ eq ⟩
-                 y ℕ.* n
-               ≡⟨ cong (λ h → y ℕ.* h) n≡qg' ⟩
-                 y ℕ.* (ℕ.suc q ℕ.* ℕ.suc g) ∎)))))
+  (GCD.is (divides p m≡pg' , divides (suc q) n≡qg') _) =
+    ((+ p) ÷suc q)
 
---gcd that gives a proof that g is zero if one of its inputs are.
-gcd≢0 : (m n : ℕ) → {n≢0 : NonZero n} → ∃ λ d → GCD m n d × NonZero d
+--gcd that gives a proof that g is NonZero if one of its inputs are NonZero
+gcd≢0 : (m n : ℕ) → {n≢0 : False (ℕ._≟_ n 0)} → ∃ λ d → GCD m n d × (False (ℕ._≟_ d 0))
 gcd≢0 m n {m≢0} with gcd m n
 gcd≢0 m n {m≢0} | (0 , GCD.is (_ , 0n) _) with ℕDiv.0∣⇒≡0 0n
 gcd≢0 m .0 {()} | (0 , GCD.is (_ , 0n) _) | refl
 gcd≢0 m n {_} | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 
-{-
---Reduces a given quotient to its coprime form
-
-reduce :  ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-reduce (+ 0) d = (+ 0 ÷ 1)
-reduce n d {d≢0} with gcd ℤ.∣ n ∣ d
-reduce n  d {d≢0} | (0 , GCD.is (_ , 0|d) _) with ℕDiv.0∣⇒≡0 0|d
-reduce n .0 {()}  | (0 , GCD.is (_ , 0|d) _) | refl
-reduce n  d {d≢0} | (ℕ.suc g , G) with normalize {ℤ.∣ n ∣} {d} {ℕ.suc g} {d≢0} G
-reduce n  d {d≢0} | (ℕ.suc g , G) | (qcon n' d' c') = (qcon (sign n ◃ ℤ.∣ n' ∣) d' (fromWitness (λ {i} → subst (λ h → C.Coprime h (suc d')) (P.sym (ℤ.abs-◃ (sign n) ℤ.∣ n' ∣)) (toWitness c'))))
--}
-wheretofindthislemma? : (z : ℤ) -> (ℤ.∣ z ∣ ≡ ℤ.∣ ℤ.- z ∣)
-wheretofindthislemma? (+ zero) = refl
-wheretofindthislemma? (+ suc n) = refl
-wheretofindthislemma? -[1+ z ] = refl
-
+--Unary negation
 -_ : ℚ → ℚ
-- (qcon n d c) = (qcon (ℤ.- n) d (fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))))
+- n ÷suc d = (ℤ.- n) ÷suc d
 
-redduce : ℤ -> (d : ℕ) -> {d≢0 : NonZero d} -> ℚ
-redduce (+ 0) d = (+ 0 ÷ 1)
-redduce -[1+ n ] d {d≢0} = - normalize {ℤ.∣ -[1+ n ] ∣} {d} {proj₁ (gcd≢0 (suc n) d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 (suc n) d {d≢0}))} (proj₁( proj₂ (gcd≢0 (suc n) d {d≢0})))
-redduce (+ n) d {d≢0} = normalize {ℤ.∣ + n ∣} {d} {proj₁ (gcd≢0 n d {d≢0})} {d≢0} {proj₂ (proj₂ (gcd≢0 n d {d≢0}))} (proj₁( proj₂ (gcd≢0 n d {d≢0})))
+--Reduces a given rational number to its coprime form
+reduce : ℚ -> ℚ
+reduce ((+ 0) ÷suc d) = (+ 0 ÷ 1)
+reduce (-[1+ n ] ÷suc d) = - normalize {ℤ.∣ -[1+ n ] ∣} {suc d} {proj₁ (gcd≢0 (suc n) (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 (suc n) (suc d) {_}))} (proj₁( proj₂ (gcd≢0 (suc n) (suc d) {_})))
+reduce ((+ n) ÷suc d) = normalize {ℤ.∣ + n ∣} {suc d} {proj₁ (gcd≢0 n (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 n (suc d) {_}))} (proj₁( proj₂ (gcd≢0 n (suc d) {_})))
 
 ------------------------------------------------------------------------------
--- Operations on rationals: unary -, reciprocal, multiplication, addition
+-- Operations on rationals: reciprocal, multiplication, addition
 
--- unary negation
--- 
--- Andreas Abel says: Agda's type-checker is incomplete when it has to handle
--- types with leading hidden quantification, such as the ones of Coprime m n
--- and c.  A work around is to use hidden abstraction explicitly.  In your
--- case, giving λ {i} -> c works.  Not pretty, but unavoidable until we
--- improve on the current heuristics. I recorded this as a bug
--- http://code.google.com/p/agda/issues/detail?id=1079
-
---- (qcon n d c) = ((ℤ.- n) ÷ (suc d)) {fromWitness λ {i} -> (subst (λ n -> C.Coprime n (suc d)) (wheretofindthislemma? n) (toWitness c))}
-{-
-- (qcon -[1+ n ] d c) = (+ ℕ.suc n ÷ ℕ.suc d) {c}
-- (qcon (+ 0) d c) = (+ 0 ÷ suc d) {c}
-- (qcon (+ ℕ.suc n) d c) = (-[1+ n ]  ÷ ℕ.suc d) {c}
--}
 -- reciprocal: requires a proof that the numerator is not zero
 
-1/_ : (p : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p ∣} → ℚ
-1/_ (qcon (+ suc n₁) d₁ c₁) = ((+ suc d₁) ÷ (suc n₁)) {fromWitness (λ {i} → C.sym (toWitness c₁))}
-1/_ (qcon (+ zero) d₂ c₂) {()}
-1/_ (qcon -[1+ n₃ ] d₃ c₃) {n≢0} = (-[1+ d₃ ] ÷ (suc n₃)) {fromWitness (λ {i} → C.sym (toWitness c₃))}
+1/_ : (p : ℚ) → {≢0 : False (ℕ._≟_ (ℤ.∣ ℚ.numerator p ∣) 0)} → ℚ
+1/_ ((+ 0) ÷suc d) {()}
+1/_ ((+ suc n) ÷suc d) = (+ suc d) ÷suc n
+1/_ (-[1+ n ] ÷suc d) = -[1+ d ] ÷suc n
+
+--Multiplication and addition
 
 _*_ : ℚ -> ℚ -> ℚ
-(qcon n₁ d₁ c₁) * (qcon n₂ d₂ c₂) = redduce (n₁ ℤ.* n₂)((suc d₁) ℕ.* (suc d₂))
+(n₁ ÷suc d₁) * (n₂ ÷suc d₂) = ((n₁ ℤ.* n₂) ÷ (suc d₁ ℕ.* suc d₂))
 
+_+_ :  ℚ -> ℚ -> ℚ
+(n₁ ÷suc d₁) + (n₂ ÷suc d₂) =  ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁))) ÷ ((suc d₁) ℕ.* (suc d₂))
 
-_+_ : ℚ → ℚ → ℚ
-(qcon n₁ d₁ c₁) + (qcon n₂ d₂ c₂) = redduce ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁)))((suc d₁) ℕ.* (suc d₂))
-
-
--- subtraction and division
+ -- subtraction and division
 
 _-_ : ℚ → ℚ → ℚ
 p₁ - p₂ = p₁ + (- p₂)
 
-_/_ : (p₁ p₂ : ℚ) → {n≢0 : NonZero ℤ.∣ ℚ.numerator p₂ ∣} → ℚ
-_/_ p₁ p₂ {n≢0} = p₁ * (1/_ p₂ {n≢0})
+_/_ : (p₁ p₂ : ℚ) → {≢0 : False (ℕ._≟_ ℤ.∣ ℚ.numerator p₂ ∣ 0)} → ℚ
+_/_ p₁ p₂ {≢0} = p₁ * (1/_ p₂ {≢0})
 
 
---absolute value of a rational number
+--absolute value
 ∣_∣ : ℚ -> ℚ
-∣ p ∣ = (+ ℤ.∣ ℚ.numerator p ∣ ÷ ( suc (ℚ.denominator-1 p))) {ℚ.isCoprime p}
+∣ n ÷suc d ∣ = (+ ℤ.∣ n ∣) ÷suc d
 
 -- conventional printed representation
 
@@ -202,97 +134,81 @@ show p = ℤ.show (ℚ.numerator p) ++ "/" ++ ℕshow (ℕ.suc (ℚ.denominator-
 ------------------------------------------------------------------------
 -- Equality
 
--- Equality of rational numbers.
+-- We define an equality relation on rational numbers in the conventional way
 
 infix 4 _≃_
 
 _≃_ : Rel ℚ Level.zero
-p ≃ q = numerator p ℤ.* denominator q ≡
-        numerator q ℤ.* denominator p
+p ≃ q = numerator p ℤ.* (+ suc (denominator-1 q)) ≡
+        numerator q ℤ.* (+ suc (denominator-1 p))
   where open ℚ
 
--- _≃_ coincides with propositional equality.
-
-≡⇒≃ : _≡_ ⇒ _≃_
-≡⇒≃ refl = refl
-
-≃⇒≡ : _≃_ ⇒ _≡_
-≃⇒≡ {i = p} {j = q} =
-  helper (numerator p) (denominator-1 p) (isCoprime p)
-         (numerator q) (denominator-1 q) (isCoprime q)
-  where
-  open ℚ
-
-  helper : ∀ n₁ d₁ c₁ n₂ d₂ c₂ →
-           n₁ ℤ.* + suc d₂ ≡ n₂ ℤ.* + suc d₁ →
-           (n₁ ÷ suc d₁) {c₁} ≡ (n₂ ÷ suc d₂) {c₂}
-  helper n₁ d₁ c₁ n₂ d₂ c₂ eq
-    with Poset.antisym ℕDiv.poset 1+d₁∣1+d₂ 1+d₂∣1+d₁
+--This is an equivalence relation
+isEquivalence : IsEquivalence _≃_
+isEquivalence = record {
+  refl = refl ;
+  sym = P.sym ;
+  trans = λ {a}{b}{c} -> trans {a}{b}{c}
+  }
     where
-    1+d₁∣1+d₂ : suc d₁ ∣ suc d₂
-    1+d₁∣1+d₂ = ℤDiv.coprime-divisor (+ suc d₁) n₁ (+ suc d₂)
-                  (C.sym $ toWitness c₁) $
-                  ℕDiv.divides ℤ.∣ n₂ ∣ (begin
-                    ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ cong ℤ.∣_∣ eq ⟩
-                    ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ ℤ.abs-*-commute n₂ (+ suc d₁) ⟩
-                    ℤ.∣ n₂ ∣ ℕ.* suc d₁    ∎)
+    trans : Transitive _≃_
+    trans {a ÷suc b} {f ÷suc g} {x ÷suc y} ag≃fb fy≃xg = cancel-*-right (a ℤ.* (+ suc y)) (x ℤ.* (+ suc b)) (+ suc g) (λ {()}) (P.trans ayg≃fby fby≃xbg)
+      where
+        agy≃fby : (a ℤ.* + suc g ℤ.* + suc y ≡ f ℤ.* + suc b ℤ.* + suc y)
+        agy≃fby = cong (λ j -> (j ℤ.* + suc y)) (ag≃fb)
+        ayg≃fby : (a ℤ.* + suc y ℤ.* + suc g ≡ f ℤ.* + suc b ℤ.* + suc y)
+        ayg≃fby = P.trans (*-assoc a (+ suc y) (+ suc g)) (P.trans (cong (λ j -> (a ℤ.* j )) (*-comm (+ suc y) (+ suc g))) (P.trans (P.sym (*-assoc a (+ suc g) (+ suc y))) agy≃fby))
+        fyb≃xgb : (f ℤ.* + suc y ℤ.* + suc b ≡ x ℤ.* + suc g ℤ.* + suc b)
+        fyb≃xgb = cong (λ j -> j ℤ.* (+ suc b)) fy≃xg
+        fby≃xgb : (f ℤ.* + suc b ℤ.* + suc y ≡ x ℤ.* + suc g ℤ.* + suc b)
+        fby≃xgb = P.trans (*-assoc f (+ suc b) (+ suc y)) (P.trans (cong (λ j -> (f ℤ.* j )) (*-comm (+ suc b) (+ suc y))) (P.trans (P.sym (*-assoc f (+ suc y) (+ suc b))) fyb≃xgb))
+        fby≃xbg : (f ℤ.* + suc b ℤ.* + suc y ≡ x ℤ.* + suc b ℤ.* + suc g)
+        fby≃xbg = P.trans (P.trans (fby≃xgb) (*-assoc x (+ suc g) (+ suc b))) (P.trans (cong (λ j -> (x ℤ.* j)) (*-comm (+ suc g) (+ suc b))) (P.sym (*-assoc x (+ suc b) (+ suc g))))
 
-    1+d₂∣1+d₁ : suc d₂ ∣ suc d₁
-    1+d₂∣1+d₁ = ℤDiv.coprime-divisor (+ suc d₂) n₂ (+ suc d₁)
-                  (C.sym $ toWitness c₂) $
-                  ℕDiv.divides ℤ.∣ n₁ ∣ (begin
-                    ℤ.∣ n₂ ℤ.* + suc d₁ ∣  ≡⟨ cong ℤ.∣_∣ (P.sym eq) ⟩
-                    ℤ.∣ n₁ ℤ.* + suc d₂ ∣  ≡⟨ ℤ.abs-*-commute n₁ (+ suc d₂) ⟩
-                    ℤ.∣ n₁ ∣ ℕ.* suc d₂    ∎)
-
-  helper n₁ d c₁ n₂ .d c₂ eq | refl with ℤ.cancel-*-right
-                                           n₁ n₂ (+ suc d) (λ ()) eq
-  helper n  d c₁ .n .d c₂ eq | refl | refl with Bool.proof-irrelevance c₁ c₂
-  helper n  d c  .n .d .c eq | refl | refl | refl = refl
 
 ------------------------------------------------------------------------
--- Equality is decidable
+--Equality is decidable
 
 infix 4 _≟_
 
-_≟_ : Decidable {A = ℚ} _≡_
-p ≟ q with ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≟
-           ℚ.numerator q ℤ.* ℚ.denominator p
-p ≟ q | yes pq≃qp = yes (≃⇒≡ pq≃qp)
-p ≟ q | no ¬pq≃qp = no (¬pq≃qp ∘ ≡⇒≃)
+_≟_ : Decidable {A = ℚ} _≃_
+p ≟ q with ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≟
+            ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
+p ≟ q | yes pq≃qp = yes (pq≃qp)
+p ≟ q | no ¬pq≃qp = no (¬pq≃qp)
 
-------------------------------------------------------------------------
--- Ordering
+--------------------------------------------------------------------------
+ -- Ordering
 
 infix 4 _≤_ _≤?_
 
 data _≤_ : ℚ → ℚ → Set where
   *≤* : ∀ {p q} →
-        ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤
-        ℚ.numerator q ℤ.* ℚ.denominator p →
+        ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤
+        ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p)) →
         p ≤ q
 
 drop-*≤* : ∀ {p q} → p ≤ q →
-           ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤
-           ℚ.numerator q ℤ.* ℚ.denominator p
+           ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤
+           ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
 drop-*≤* (*≤* pq≤qp) = pq≤qp
 
 _≤?_ : Decidable _≤_
-p ≤? q with ℚ.numerator p ℤ.* ℚ.denominator q ℤ.≤?
-            ℚ.numerator q ℤ.* ℚ.denominator p
+p ≤? q with ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)) ℤ.≤?
+            ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))
 p ≤? q | yes pq≤qp = yes (*≤* pq≤qp)
 p ≤? q | no ¬pq≤qp = no (λ { (*≤* pq≤qp) → ¬pq≤qp pq≤qp })
 
 decTotalOrder : DecTotalOrder _ _ _
 decTotalOrder = record
   { Carrier         = ℚ
-  ; _≈_             = _≡_
+  ; _≈_             = _≃_
   ; _≤_             = _≤_
   ; isDecTotalOrder = record
       { isTotalOrder = record
           { isPartialOrder = record
               { isPreorder = record
-                  { isEquivalence = P.isEquivalence
+                  { isEquivalence = isEquivalence
                   ; reflexive     = refl′
                   ; trans         = trans
                   }
@@ -307,20 +223,19 @@ decTotalOrder = record
   where
   module ℤO = DecTotalOrder ℤ.decTotalOrder
 
-  refl′ : _≡_ ⇒ _≤_
-  refl′ refl = *≤* ℤO.refl
+  refl′ : _≃_ ⇒ _≤_
+  refl′ p = *≤* (IsPreorder.reflexive (IsPartialOrder.isPreorder (IsTotalOrder.isPartialOrder (IsDecTotalOrder.isTotalOrder (DecTotalOrder.isDecTotalOrder ℤ.decTotalOrder)))) p)
 
   trans : Transitive _≤_
   trans {i = p} {j = q} {k = r} (*≤* le₁) (*≤* le₂)
     = *≤* (ℤ.cancel-*-+-right-≤ _ _ _
             (lemma
-              (ℚ.numerator p) (ℚ.denominator p)
-              (ℚ.numerator q) (ℚ.denominator q)
-              (ℚ.numerator r) (ℚ.denominator r)
+              (ℚ.numerator p) ((+ suc (ℚ.denominator-1 p)))
+              (ℚ.numerator q) ((+ suc (ℚ.denominator-1 q)))
+              (ℚ.numerator r) ((+ suc (ℚ.denominator-1 r)))
               (ℤ.*-+-right-mono (ℚ.denominator-1 r) le₁)
               (ℤ.*-+-right-mono (ℚ.denominator-1 p) le₂)))
     where
-    open Algebra.CommutativeRing ℤ.commutativeRing
 
     lemma : ∀ n₁ d₁ n₂ d₂ n₃ d₃ →
             n₁ ℤ.* d₂ ℤ.* d₃ ℤ.≤ n₂ ℤ.* d₁ ℤ.* d₃ →
@@ -329,41 +244,20 @@ decTotalOrder = record
     lemma n₁ d₁ n₂ d₂ n₃ d₃
       rewrite *-assoc n₁ d₂ d₃
             | *-comm d₂ d₃
-            | sym (*-assoc n₁ d₃ d₂)
+            | P.sym (*-assoc n₁ d₃ d₂)
             | *-assoc n₃ d₂ d₁
             | *-comm d₂ d₁
-            | sym (*-assoc n₃ d₁ d₂)
+            | P.sym (*-assoc n₃ d₁ d₂)
             | *-assoc n₂ d₁ d₃
             | *-comm d₁ d₃
-            | sym (*-assoc n₂ d₃ d₁)
+            | P.sym (*-assoc n₂ d₃ d₁)
             = ℤO.trans
 
-  antisym : Antisymmetric _≡_ _≤_
-  antisym (*≤* le₁) (*≤* le₂) = ≃⇒≡ (ℤO.antisym le₁ le₂)
+  antisym : Antisymmetric _≃_ _≤_
+  antisym (*≤* le₁) (*≤* le₂) = (ℤO.antisym le₁ le₂)
 
   total : Total _≤_
   total p q =
     [ inj₁ ∘′ *≤* , inj₂ ∘′ *≤* ]′
-      (ℤO.total (ℚ.numerator p ℤ.* ℚ.denominator q)
-                (ℚ.numerator q ℤ.* ℚ.denominator p))
-
-------------------------------------------------------------------------------
--- A few constants and some small tests
-
-0ℚ 1ℚ : ℚ
-0ℚ = + 0 ÷ 1
-1ℚ = + 1 ÷ 1
-
-private
-
-  p₀ p₁ p₂ p₃ : ℚ
-  p₀ = + 1 ÷ 2
-  p₁ = + 1 ÷ 3
-  p₂ = -[1+ 2 ] ÷ 4
-  p₃ = + 3 ÷ 4
-
-  test₀ = show p₂
-  test₁ = show (- p₂)
-  test₂ = show (1/ p₂)
-  test₃ = show (p₀ + p₀)
-  test₄ = show (p₁ * p₂)
+      (ℤO.total (ℚ.numerator p ℤ.* (+ suc (ℚ.denominator-1 q)))
+                (ℚ.numerator q ℤ.* (+ suc (ℚ.denominator-1 p))))
