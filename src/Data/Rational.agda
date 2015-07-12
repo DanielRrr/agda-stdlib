@@ -15,11 +15,9 @@ import Data.Bool.Properties as Bool
 open import Function
 open import Data.Product
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_]; _◃_; sign)
-open import Data.Integer.Divisibility as ℤDiv using (_∣_; Coprime)
 import Data.Integer.Properties as ℤ
 open import Data.Nat.GCD
 open import Data.Nat.Divisibility as ℕDiv using (_∣_; divides; quotient)
-import Data.Nat.Coprimality as C using (sym; Coprime; coprime?; Bézout-coprime; 0-coprimeTo-1; 1-coprimeTo; coprime-gcd)
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Nat.Show renaming (show to ℕshow)
 open import Data.Sum
@@ -29,7 +27,8 @@ open import Relation.Nullary.Decidable
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.Core using (_≢_)
-open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; subst; cong; cong₂)
+open import Relation.Binary.PropositionalEquality as P using 
+  (_≡_; refl; subst; cong; cong₂)
 open import Data.Integer.Properties using (cancel-*-right)
 open P.≡-Reasoning
 open CommutativeMonoid Mul.commutativeMonoid
@@ -46,7 +45,8 @@ infixl 6  _+_ _-_
 ------------------------------------------------------------------------
 -- The definition
 
--- Rational numbers in reduced form. Note that we do not require the arguments to be given in their reduced form
+--Rational numbers 
+--Note that we do not require the arguments to be given in their reduced form
 
 record ℚ : Set where
   constructor _÷suc_
@@ -66,10 +66,10 @@ n ÷ (suc d) = n ÷suc d
 ------------------------------------------------------------------------
 --  Functions for reducing rational numbers to their coprime form
 
-
 -- normalize takes two natural numbers, say 6 and 21 and their gcd 3, and
 -- returns them normalized as 2 and 7
-normalize : {m n g : ℕ} → {n≢0 : False (ℕ._≟_ n 0)} → {g≢0 : False (ℕ._≟_ g 0)} →
+normalize : {m n g : ℕ} → 
+  {n≢0 : False (ℕ._≟_ n 0)} → {g≢0 : False (ℕ._≟_ g 0)} →
             GCD m n g → ℚ
 normalize {m} {n} {0} {_} {()} _
 normalize {m} {.0} {ℕ.suc g} {()} {_}
@@ -79,7 +79,8 @@ normalize {m} {n} {ℕ.suc g} {_} {_}
     ((+ p) ÷suc q)
 
 --gcd that gives a proof that g is NonZero if one of its inputs are NonZero
-gcd≢0 : (m n : ℕ) → {n≢0 : False (ℕ._≟_ n 0)} → ∃ λ d → GCD m n d × (False (ℕ._≟_ d 0))
+gcd≢0 : (m n : ℕ) → {n≢0 : False (ℕ._≟_ n 0)} → ∃ λ d → 
+  GCD m n d × (False (ℕ._≟_ d 0))
 gcd≢0 m n {m≢0} with gcd m n
 gcd≢0 m n {m≢0} | (0 , GCD.is (_ , 0n) _) with ℕDiv.0∣⇒≡0 0n
 gcd≢0 m .0 {()} | (0 , GCD.is (_ , 0n) _) | refl
@@ -92,8 +93,14 @@ gcd≢0 m n {_} | (ℕ.suc d , G) = (ℕ.suc d , G , tt)
 --Reduces a given rational number to its coprime form
 reduce : ℚ -> ℚ
 reduce ((+ 0) ÷suc d) = (+ 0 ÷ 1)
-reduce (-[1+ n ] ÷suc d) = - normalize {ℤ.∣ -[1+ n ] ∣} {suc d} {proj₁ (gcd≢0 (suc n) (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 (suc n) (suc d) {_}))} (proj₁( proj₂ (gcd≢0 (suc n) (suc d) {_})))
-reduce ((+ n) ÷suc d) = normalize {ℤ.∣ + n ∣} {suc d} {proj₁ (gcd≢0 n (suc d) {_})} {_} {proj₂ (proj₂ (gcd≢0 n (suc d) {_}))} (proj₁( proj₂ (gcd≢0 n (suc d) {_})))
+reduce (-[1+ n ] ÷suc d) = 
+  - normalize {ℤ.∣ -[1+ n ] ∣} {suc d} {proj₁ (gcd≢0 (suc n) (suc d) {_})} {_}
+  {proj₂ (proj₂ (gcd≢0 (suc n) (suc d) {_}))} 
+  (proj₁( proj₂ (gcd≢0 (suc n) (suc d) {_})))
+reduce ((+ n) ÷suc d) = 
+  normalize {ℤ.∣ + n ∣} {suc d} {proj₁ (gcd≢0 n (suc d) {_})} {_} 
+  {proj₂ (proj₂ (gcd≢0 n (suc d) {_}))} 
+  (proj₁ (proj₂ (gcd≢0 n (suc d) {_})))
 
 ------------------------------------------------------------------------------
 -- Operations on rationals: reciprocal, multiplication, addition
@@ -111,7 +118,8 @@ _*_ : ℚ -> ℚ -> ℚ
 (n₁ ÷suc d₁) * (n₂ ÷suc d₂) = ((n₁ ℤ.* n₂) ÷ (suc d₁ ℕ.* suc d₂))
 
 _+_ :  ℚ -> ℚ -> ℚ
-(n₁ ÷suc d₁) + (n₂ ÷suc d₂) =  ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁))) ÷ ((suc d₁) ℕ.* (suc d₂))
+(n₁ ÷suc d₁) + (n₂ ÷suc d₂) =  ((n₁ ℤ.* + (suc d₂)) ℤ.+ (n₂ ℤ.* + (suc  d₁))) 
+  ÷ ((suc d₁) ℕ.* (suc d₂))
 
  -- subtraction and division
 
@@ -152,18 +160,26 @@ isEquivalence = record {
   }
     where
     trans : Transitive _≃_
-    trans {a ÷suc b} {f ÷suc g} {x ÷suc y} ag≃fb fy≃xg = cancel-*-right (a ℤ.* (+ suc y)) (x ℤ.* (+ suc b)) (+ suc g) (λ {()}) (P.trans ayg≃fby fby≃xbg)
+    trans {a ÷suc b} {f ÷suc g} {x ÷suc y} ag≃fb fy≃xg = 
+      cancel-*-right (a ℤ.* (+ suc y)) (x ℤ.* (+ suc b)) (+ suc g) (λ {()}) 
+        (P.trans ayg≃fby fby≃xbg)
       where
         agy≃fby : (a ℤ.* + suc g ℤ.* + suc y ≡ f ℤ.* + suc b ℤ.* + suc y)
         agy≃fby = cong (λ j -> (j ℤ.* + suc y)) (ag≃fb)
         ayg≃fby : (a ℤ.* + suc y ℤ.* + suc g ≡ f ℤ.* + suc b ℤ.* + suc y)
-        ayg≃fby = P.trans (*-assoc a (+ suc y) (+ suc g)) (P.trans (cong (λ j -> (a ℤ.* j )) (*-comm (+ suc y) (+ suc g))) (P.trans (P.sym (*-assoc a (+ suc g) (+ suc y))) agy≃fby))
+        ayg≃fby = P.trans (*-assoc a (+ suc y) (+ suc g)) 
+          (P.trans (cong (λ j -> (a ℤ.* j )) (*-comm (+ suc y) (+ suc g))) 
+            (P.trans (P.sym (*-assoc a (+ suc g) (+ suc y))) agy≃fby))
         fyb≃xgb : (f ℤ.* + suc y ℤ.* + suc b ≡ x ℤ.* + suc g ℤ.* + suc b)
         fyb≃xgb = cong (λ j -> j ℤ.* (+ suc b)) fy≃xg
         fby≃xgb : (f ℤ.* + suc b ℤ.* + suc y ≡ x ℤ.* + suc g ℤ.* + suc b)
-        fby≃xgb = P.trans (*-assoc f (+ suc b) (+ suc y)) (P.trans (cong (λ j -> (f ℤ.* j )) (*-comm (+ suc b) (+ suc y))) (P.trans (P.sym (*-assoc f (+ suc y) (+ suc b))) fyb≃xgb))
+        fby≃xgb = P.trans (*-assoc f (+ suc b) (+ suc y)) 
+          (P.trans (cong (λ j -> (f ℤ.* j )) (*-comm (+ suc b) (+ suc y))) 
+            (P.trans (P.sym (*-assoc f (+ suc y) (+ suc b))) fyb≃xgb))
         fby≃xbg : (f ℤ.* + suc b ℤ.* + suc y ≡ x ℤ.* + suc b ℤ.* + suc g)
-        fby≃xbg = P.trans (P.trans (fby≃xgb) (*-assoc x (+ suc g) (+ suc b))) (P.trans (cong (λ j -> (x ℤ.* j)) (*-comm (+ suc g) (+ suc b))) (P.sym (*-assoc x (+ suc b) (+ suc g))))
+        fby≃xbg = P.trans (P.trans (fby≃xgb) (*-assoc x (+ suc g) (+ suc b))) 
+          (P.trans (cong (λ j -> (x ℤ.* j)) (*-comm (+ suc g) (+ suc b))) 
+            (P.sym (*-assoc x (+ suc b) (+ suc g))))
 
 
 ------------------------------------------------------------------------
@@ -224,7 +240,9 @@ decTotalOrder = record
   module ℤO = DecTotalOrder ℤ.decTotalOrder
 
   refl′ : _≃_ ⇒ _≤_
-  refl′ p = *≤* (IsPreorder.reflexive (IsPartialOrder.isPreorder (IsTotalOrder.isPartialOrder (IsDecTotalOrder.isTotalOrder (DecTotalOrder.isDecTotalOrder ℤ.decTotalOrder)))) p)
+  refl′ p = *≤* (reflexive p)
+    where
+      open DecTotalOrder ℤ.decTotalOrder using (reflexive)
 
   trans : Transitive _≤_
   trans {i = p} {j = q} {k = r} (*≤* le₁) (*≤* le₂)
