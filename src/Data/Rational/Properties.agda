@@ -8,16 +8,16 @@ open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; _-_; _+_; ∣_�
 open import Data.Integer as ℤ using (decTotalOrder; ℤ; +_ ; -[1+_]; drop‿-≤-; _≤?_; _⊖_) renaming 
   (_-_ to ℤ_-_; _+_ to _ℤ+_; _*_ to  _ℤ*_;_≤_ to ℤ_≤_)
 open import Data.Nat as ℕ using (ℕ; suc; zero; pred; compare; _<_; _∸_; s≤s; z≤n) renaming (_≤_ to ℕ_≤_; _≤?_ to _≤??_)
-open import Data.Nat.Properties.Simple using (+-comm; +-suc; +-right-identity; 
-  *-comm)
+open import Data.Nat.Properties.Simple using (+-comm; +-suc;
+  *-comm; +-right-identity)
 open import Relation.Binary.Core using (_Preserves₂_⟶_⟶_; IsEquivalence)
-open import Data.Nat.Properties using (m≤m+n; _+-mono_)
+open import Data.Nat.Properties using (m≤m+n; _+-mono_; ≤-steps; ≤-step)
 import Relation.Binary.PreorderReasoning as Pre
 open import Relation.Binary.PropositionalEquality.Core using (trans; subst)
 open import Algebra using (module CommutativeRing)
 open import Data.Integer.Properties using (commutativeRing; abs-◃; *-+-right-mono; cancel-*-+-right-≤)
 open import Relation.Binary.PropositionalEquality as P using (_≡_; refl; 
-  subst; cong; cong₂)
+  subst; cong; cong₂; subst₂)
 open import Data.Product
 open import Relation.Binary using (module DecTotalOrder)
 open CommutativeRing commutativeRing
@@ -209,7 +209,7 @@ _⁻¹ : (n : ℕ) -> {≢0 : False (ℕ._≟_ n 0)} -> ℚ
 ℚ≤lem {m}{n} =  *≤* (ℤ.+≤+ (ℕ.s≤s ((m≤m+n m n) +-mono (z≤n))))
 
 postulate ℚtriang : (x y z : ℚ) -> (∣ x - z ∣ ≤ ∣ x - y ∣ + ∣ y - z ∣)
-{-
+
 ⊖-< : ∀ {m n} → m < n → m ⊖ n ≡ ℤ.- ℤ.+ (n ∸ m)
 ⊖-< {zero}  (s≤s z≤n) = refl
 ⊖-< {suc m} (s≤s m<n) = ⊖-< m<n
@@ -220,26 +220,48 @@ postulate ℚtriang : (x y z : ℚ) -> (∣ x - z ∣ ≤ ∣ x - y ∣ + ∣ y 
 
 _ℤ+-mono_ :  ℤ._+_ Preserves₂ ℤ._≤_ ⟶ ℤ._≤_ ⟶ ℤ._≤_
 ℤ.-≤+ ℤ+-mono ℤ.-≤+ = ℤ.-≤+
-ℤ.-≤+ {m}{n} ℤ+-mono ℤ.-≤- {m₁}{n₁} m₁≤n₁ with suc n₁ ≤?? n 
-ℤ.-≤+ {m}{n} ℤ+-mono ℤ.-≤- {m₁}{n₁} m₁≤n₁ | yes p = ℤ.-≤+ --{!subst (λ a -> (ℤ.-≤+ {suc (m ℕ.+ m₁)}{a})) ? ?!} --subst (ℤ.-≤- {suc (m ℕ.+ m₁)} {?})  ? ? 
---{!subst (λ a -> ℤ.-≤- {suc (m ℕ.+ m₁)}{a}) ? ?!}
-  where
-    tada = ⊖-≥ p
-    s = {!subst !}
-    --se = subst (λ a -> a) (tada) ?
-ℤ.-≤+ ℤ+-mono ℤ.-≤- m₁≤n₁ | no ¬p₁ = {!!}
-    where
-    --tada = ⊖-≥ p
-    --s = {!subst (λ a -> ℤ.-≤+ !}
-ℤ.-≤+ ℤ+-mono ℤ.+≤+ m≤n = {!!}
-ℤ.-≤- n≤m ℤ+-mono ℤ.-≤+ = {!!}
-ℤ.-≤- n≤m ℤ+-mono ℤ.-≤- n≤m₁ = ℤ.-≤- (ℕ.s≤s ((n≤m +-mono n≤m₁))) 
-ℤ.-≤- n≤m ℤ+-mono ℤ.+≤+ m≤n = {!!}
-ℤ.+≤+ m≤n ℤ+-mono ℤ.-≤+ = {!!}
-ℤ.+≤+ m≤n ℤ+-mono ℤ.-≤- n≤m = {!!}
-ℤ.+≤+ m≤n ℤ+-mono ℤ.+≤+ m≤n₁ = ℤ.+≤+ ((m≤n +-mono m≤n₁))
--}
-postulate _ℤ+-mono_ :  ℤ._+_ Preserves₂ ℤ._≤_ ⟶ ℤ._≤_ ⟶ ℤ._≤_
+ℤ.-≤+ {n} {zero} ℤ+-mono ℤ.-≤- {m} {zero} m₁≤n₁ = ℤ.-≤- z≤n
+ℤ.-≤+ ℤ+-mono ℤ.-≤- {zero} {suc n} ()
+ℤ.-≤+ {zero} {zero} ℤ+-mono ℤ.-≤- {suc m} {suc n} m₁≤n₁ = ℤ.-≤- (z≤n {suc zero} +-mono m₁≤n₁)
+ℤ.-≤+ {m} {suc n} ℤ+-mono ℤ.-≤- {m₁} {zero} m₁≤n₁ = ℤ.-≤+
+ℤ.-≤+ {zero} {suc n} ℤ+-mono ℤ.-≤- {suc m} {suc n₁} (s≤s m₁≤n₁) = ℤ.-≤+ {suc zero} {n} ℤ+-mono ℤ.-≤- {m} {n₁} (m₁≤n₁)
+ℤ.-≤+ {suc m} {zero} ℤ+-mono ℤ.-≤- {suc m₁} {suc n} m₁≤n₁ = ℤ.-≤- (≤-steps (suc (suc m)) m₁≤n₁)
+ℤ.-≤+ {suc m} {suc n} ℤ+-mono ℤ.-≤- {suc m₁} {suc n₁} (s≤s m₁≤n₁) = ℤ.-≤+ {suc m} {n} ℤ+-mono ℤ.-≤- {suc m₁} {n₁} (≤-step m₁≤n₁)
+ℤ.-≤+ ℤ+-mono ℤ.+≤+ {zero} {n₁} m≤n = ℤ.-≤+
+ℤ.-≤+ ℤ+-mono ℤ.+≤+ {suc m₁} {zero} () 
+ℤ.-≤+ {zero} {n} ℤ+-mono ℤ.+≤+ {suc m₁} {suc n₁} (s≤s m≤n) = ℤ.+≤+ (≤-steps n (≤-step m≤n))
+ℤ.-≤+ {suc m} {n} ℤ+-mono ℤ.+≤+ {suc m₁} {suc n₁} (s≤s m≤n) = ℤ.-≤+ {m}{n} ℤ+-mono ℤ.+≤+ {m₁}{suc n₁} (≤-step m≤n)
+ℤ.-≤- {m} {zero} n≤m ℤ+-mono ℤ.-≤+ {n₁} {zero} = ℤ.-≤- z≤n
+ℤ.-≤- {m} {zero} n≤m ℤ+-mono ℤ.-≤+ {n₁} {suc n} = ℤ.-≤+
+ℤ.-≤- {zero} {suc n}() ℤ+-mono ℤ.-≤+
+ℤ.-≤- {suc m} {suc n} n≤m ℤ+-mono ℤ.-≤+ {zero} {zero} = ℤ.-≤- (subst₂ (λ a b -> a ℕ.≤ suc b) (+-right-identity (suc n)) (+-suc m zero) (n≤m +-mono z≤n {suc zero}))
+ℤ.-≤- {suc m} {suc n} (s≤s n≤m) ℤ+-mono ℤ.-≤+ {m₁} {suc n₁} = ℤ.-≤- {suc m} {n} (≤-step n≤m) ℤ+-mono ℤ.-≤+ {m₁}{n₁}
+ℤ.-≤- {suc m} {suc n} (s≤s n≤m) ℤ+-mono ℤ.-≤+ {m₁} {zero} = ℤ.-≤- (subst (λ a -> suc n ℕ.≤ suc (suc a)) (+-comm m₁ m) (s≤s (≤-step (≤-steps m₁ n≤m))))
+ℤ.-≤- {m} {n}  n≤m ℤ+-mono ℤ.-≤-  n≤m₁ = ℤ.-≤- (ℕ.s≤s (n≤m +-mono n≤m₁))
+ℤ.-≤- {zero} {zero} n≤m ℤ+-mono ℤ.+≤+ {zero} {zero} m≤n = ℤ.-≤- m≤n
+ℤ.-≤- {m} {zero} n≤m ℤ+-mono ℤ.+≤+ {zero} {suc n} m≤n = ℤ.-≤+
+ℤ.-≤-  n≤m ℤ+-mono ℤ.+≤+ {suc m} {zero} ()
+ℤ.-≤- {zero} {zero} n≤m ℤ+-mono ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) = ℤ.+≤+ m≤n
+ℤ.-≤- {zero} {suc n} () ℤ+-mono ℤ.+≤+ m≤n
+ℤ.-≤- {suc m} {n} n≤m ℤ+-mono ℤ.+≤+ {zero} {zero} m≤n = ℤ.-≤- n≤m
+ℤ.-≤- {suc m} {zero} z≤n ℤ+-mono ℤ.+≤+ {suc m₁} {suc n} (s≤s m≤n) = ℤ.-≤+ {m} {zero} ℤ+-mono ℤ.+≤+ {m₁} {n} m≤n
+ℤ.-≤- {suc m} {suc n} (s≤s n≤m) ℤ+-mono ℤ.+≤+ {zero} {suc n₁} m≤n = ℤ.-≤+ {zero}{n₁} ℤ+-mono ℤ.-≤- n≤m
+ℤ.-≤- {suc m} {suc n} (s≤s n≤m) ℤ+-mono ℤ.+≤+ {suc m₁} {suc n₁} (s≤s m≤n) = ℤ.-≤- n≤m ℤ+-mono ℤ.+≤+ m≤n
+ℤ.+≤+ {zero} {n} m≤n ℤ+-mono ℤ.-≤+ = ℤ.-≤+
+ℤ.+≤+ {suc m} {zero} () ℤ+-mono ℤ.-≤+
+ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) ℤ+-mono ℤ.-≤+ {zero} {n₁} = ℤ.+≤+ (subst (λ a -> m ℕ.≤ suc a) (+-comm n₁ n) (≤-steps (suc n₁) (m≤n)))
+ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) ℤ+-mono ℤ.-≤+ {suc m₁} {n₁} = ℤ.+≤+ {m} {suc n} (≤-step m≤n) ℤ+-mono ℤ.-≤+ {m₁} {n₁}
+ℤ.+≤+ {zero} {zero} m≤n ℤ+-mono ℤ.-≤- n≤m = ℤ.-≤- n≤m
+ℤ.+≤+ {zero} {suc n} m≤n ℤ+-mono ℤ.-≤- {n₁} {zero} n≤m = ℤ.-≤+
+ℤ.+≤+ m≤n ℤ+-mono ℤ.-≤- {zero} {suc n₁} ()
+ℤ.+≤+ {zero} {suc n} z≤n ℤ+-mono ℤ.-≤- {suc m} {suc n₁} (s≤s n≤m) = ℤ.-≤+ {zero}{n} ℤ+-mono ℤ.-≤- {m}{n₁} n≤m
+ℤ.+≤+ {suc m} {zero} () ℤ+-mono ℤ.-≤- n≤m
+ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) ℤ+-mono ℤ.-≤- {zero} {zero} n≤m = ℤ.+≤+ m≤n
+ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) ℤ+-mono ℤ.-≤- {suc m₁} {zero} z≤n = ℤ.-≤+ {m₁}{zero} ℤ+-mono ℤ.+≤+ m≤n
+ℤ.+≤+ {suc m} {suc n} (s≤s m≤n) ℤ+-mono ℤ.-≤- {suc m₁} {suc n₁} (s≤s n≤m) = ℤ.-≤- n≤m ℤ+-mono ℤ.+≤+ m≤n
+ℤ.+≤+ m≤n ℤ+-mono ℤ.+≤+ m≤n₁ = ℤ.+≤+ (m≤n +-mono m≤n₁)
+
+--postulate _ℤ+-mono_ :  ℤ._+_ Preserves₂ ℤ._≤_ ⟶ ℤ._≤_ ⟶ ℤ._≤_
 
 _ℚ+-mono_ :  _+_ Preserves₂ _≤_ ⟶ _≤_ ⟶ _≤_
 _ℚ+-mono_ {p}{q}{x}{y} (*≤* pq) (*≤* xy) = *≤* (begin
