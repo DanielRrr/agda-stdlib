@@ -42,15 +42,15 @@ postulate Bishopslem : {x y : ℝ} ->
            ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)) 
            -> (x ≃ y)
 
-{-
+
 --This lemma ((2.3) in Constructive Analysis) gives us a
 --useful way to show equality
 bishopslem : {x y : ℝ} -> 
            ({j : ℕ} -> ∃ λ Nⱼ -> ({m : ℕ} -> 
            ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)) 
            -> (x ≃ y)
-bishopslem {x}{y} (n , j) = {!!}
- -}
+bishopslem {x}{y} f {j} = {!!}
+ 
 isEquivalence : IsEquivalence _≃_
 isEquivalence = record {
   refl = λ {x} -> refl≃ {x} ;
@@ -92,3 +92,16 @@ isEquivalence = record {
         renaming (reflexive to ≈->≤; trans to ≤trans; isPreorder to ℚisPreorder)
       open Pre record {isPreorder = ℚisPreorder}
       Nⱼ = λ {j} -> suc ((suc (j ℕ.+ j) ℕ.+ (suc (j ℕ.+ j))))
+
+--Examples
+sqrt2 : ℝ
+sqrt2 = Real f reg
+  where
+    f : ℕ -> ℚ
+    f zero = (+ 1) ÷suc 0
+    f (suc n) = ((ℚ.numerator (f n) ℤ.+ (+ 2) ℤ.* ℚ.denominator (f n)) ÷suc (ℤ.∣ ℚ.numerator (f n) ∣ ℕ.+ ℚ.denominator-1 (f n)))
+    reg : {n m : ℕ} -> ∣ f n ℚ.- f m ∣ ℚ.≤ (suc n)⁻¹ ℚ.+ (suc m)⁻¹
+    reg {zero} {zero} = *≤* (ℤ.+≤+ ℕ.z≤n)
+    reg {zero} {suc m} = *≤* {!!}
+    reg {suc n} {zero} = *≤* {!!}
+    reg {suc n} {suc m} = *≤* {!!}
