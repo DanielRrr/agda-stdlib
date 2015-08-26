@@ -1,3 +1,4 @@
+
 ------------------------------------------------------------------------
 -- The Agda standard library
 --
@@ -150,6 +151,9 @@ _≃_ : Rel ℚ Level.zero
 p ≃ q = numerator p ℤ.* (+ suc (denominator-1 q)) ≡
         numerator q ℤ.* (+ suc (denominator-1 p))
   where open ℚ
+
+≡⇒≃ : _≡_ ⇒ _≃_
+≡⇒≃ refl = refl
 
 --This is an equivalence relation
 isEquivalence : IsEquivalence _≃_
