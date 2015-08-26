@@ -42,30 +42,6 @@ postulate Bishopslem : {x y : ℝ} ->
            ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)) 
            -> (x ≃ y)
 
---This lemma ((2.3) in Constructive Analysis) gives us a
---useful way to show equality
-bishopslem : {x y : ℝ}{m : ℕ} -> 
-           ({j : ℕ} -> (∃ λ Nⱼ -> ({m : ℕ} -> 
-           ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)))
-           -> ({n : ℕ} -> ∣ ℝ.f x n - ℝ.f y n ∣ ≤ (suc n)⁻¹ ℚ.+ (suc n)⁻¹)
-bishopslem {x}{y}{m} f  = λ {n} -> begin
-  ∣ ℝ.f x n - ℝ.f y n ∣ ∼⟨ triang (ℝ.f x n) (ℝ.f x m) (ℝ.f y n) ⟩
-  ∣ ℝ.f x n - ℝ.f x m ∣ + ∣ ℝ.f x m - ℝ.f y n ∣ ∼⟨  ≈->≤ {∣ ℝ.f x n - ℝ.f x m ∣}{∣ ℝ.f x n - ℝ.f x m ∣} refl ℚ+-mono  triang (ℝ.f x m) (ℝ.f y m) (ℝ.f y n)   ⟩
-  ∣ ℝ.f x n - ℝ.f x m ∣ + (∣ ℝ.f x m - ℝ.f y m ∣ + ∣ ℝ.f y m - ℝ.f y n ∣) ∼⟨ {!!} {-ℝ.reg x {n}{m} ℚ+-mono (proj₂ f ℚ+-mono ℝ.reg y {m}{n}) -} ⟩
-  suc n ⁻¹ + suc m ⁻¹ + (suc m ⁻¹ + (suc m ⁻¹ + suc n ⁻¹)) ∼⟨ (≈->≤ {suc n ⁻¹}{suc n ⁻¹} refl ℚ+-mono lim (suc m ⁻¹) ( {!!})) ℚ+-mono (lim (suc m ⁻¹) ({!!}) ℚ+-mono (lim (suc m ⁻¹) ( {!!}) ℚ+-mono ≈->≤ {suc n ⁻¹}{suc n ⁻¹} refl)) ⟩
-  suc n ⁻¹ + 0' + (0' + (0' + suc n ⁻¹)) ∼⟨ {!!} ⟩
-  suc n ⁻¹ + suc n ⁻¹ ∎
-  where
-      open DecTotalOrder ℚ.decTotalOrder using () 
-        renaming (reflexive to ≈->≤; trans to ≤trans; isPreorder to ℚisPreorder)
-      --j : ℕ
-      --Nⱼ = proj₁ f
-      --m = λ {m} -> m
-      --j = λ {j} -> j
-      --m = Nⱼ ℕ.+ j
-      0' = (+ 0)÷suc 0
-      open Pre record {isPreorder = ℚisPreorder}
-
 isEquivalence : IsEquivalence _≃_
 isEquivalence = record {
   refl = λ {x} -> refl≃ {x} ;
@@ -108,22 +84,4 @@ isEquivalence = record {
       open Pre record {isPreorder = ℚisPreorder}
       Nⱼ = λ {j} -> suc ((suc (j ℕ.+ j) ℕ.+ (suc (j ℕ.+ j))))
 
---Examples
-sqrt2 : ℝ
-sqrt2 = Real f reg
-  where
-    f : ℕ -> ℚ
-    f zero = (+ 1) ÷suc 0
-    f (suc n) = ((ℚ.numerator (f n) ℤ.+ (+ 2) ℤ.* ℚ.denominator (f n)) ÷suc (ℤ.∣ ℚ.numerator (f n) ∣ ℕ.+ ℚ.denominator-1 (f n)))
-    reg : {n m : ℕ} -> ∣ f n ℚ.- f m ∣ ℚ.≤ (suc n)⁻¹ ℚ.+ (suc m)⁻¹
-    reg {n} {m} with n ℕ.≤? m
-    reg | yes p = {!!}
-    reg | no ¬p = {!!}
-      where
-      open DecTotalOrder ℚ.decTotalOrder using () 
-        renaming (reflexive to ≈->≤; trans to ≤trans; isPreorder to ℚisPreorder)
-      open Pre record {isPreorder = ℚisPreorder}
-      dimin : {n : ℕ} -> ∣ f n ℚ.- f (suc (suc n)) ∣ ≤ ∣ f n ℚ.- f (suc n) ∣
-      dimin {n} with f n ℚ.≤? f (suc (suc n))
-      dimin | p = {!!}
        

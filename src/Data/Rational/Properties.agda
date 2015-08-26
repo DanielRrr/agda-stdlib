@@ -827,25 +827,3 @@ triang x y z | no ¬p | no ¬p₁ | no ¬p₂ = begin
        renaming (reflexive to ≡⇒≤)
      open Pre preorder
 
-≤⇒∃ : ∀ {q} -> (((+ 0)÷suc 0) ℚ< q) -> (∃ λ a -> (a ℚ< q))
-≤⇒∃ { -[1+ n ] ÷suc d} (*≤* ())
-≤⇒∃ {(+ 0)÷suc d} (*≤* (ℤ.+≤+ ()))
-≤⇒∃ {(+ suc n) ÷suc d} le = (+ suc n) ÷suc suc d ,
-  *≤* (subst₂ (λ a b -> + 1 ℤ.+ a ℤ.≤ b)
-  (P.sym (◃-left-inverse (+ (suc n ℕ.* suc d))))
-  (P.sym (◃-left-inverse (+ (suc n ℕ.* suc (suc d)))))
-  (ℤ.+≤+ (subst (λ a -> suc (suc n ℕ.* suc d) ℕ.≤ a)
-  (P.sym (+-*-suc (suc n)(suc d))) (s≤s {0}{n} z≤n +-mono
-  ≤-refl {suc n ℕ.* suc d}) )))
-
-
---logic : ∀ {q} -> (∃ λ a -> a ℚ< q) -> ¬(∀ {j} -> q ≤ (+ 1)÷suc j)
---logic {n} (a , leq) f = {!!}
-
-postulate lim : ∀ q -> (∀ j -> q ≤ (+ 1)÷suc j) -> q ≤ (+ 0)÷suc 0
---lim q leq with q ℚ.≤? (+ 0)÷suc 0
---lim q leq | yes p = p
---lim q leq | no ¬p = {!!}
-
-postulate limit : ∀ s -> (+ 1)÷suc s ≤ (+ 0)÷suc 0
-
