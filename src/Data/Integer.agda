@@ -13,6 +13,7 @@ open import Data.Sign as Sign using (Sign) renaming (_*_ to _S*_)
 open import Data.Product as Prod
 open import Data.String using (String; _++_)
 open import Function
+import Level
 open import Data.Sum as Sum
 open import Relation.Nullary
 import Relation.Nullary.Decidable as Dec
@@ -193,6 +194,15 @@ data _≤_ : ℤ → ℤ → Set where
   -≤+ : ∀ {m n} → -[1+ m ] ≤ + n
   -≤- : ∀ {m n} → (n≤m : ℕ._≤_ n m) → -[1+ m ] ≤ -[1+ n ]
   +≤+ : ∀ {m n} → (m≤n : ℕ._≤_ m n) → + m ≤ + n
+
+_<_ : Rel ℤ Level.zero
+m < n = suc m ≤ n
+
+_>_ : Rel ℤ Level.zero
+m > n = n < m
+
+_≰_ : Rel ℤ Level.zero
+a ≰ b = ¬ a ≤ b
 
 drop‿+≤+ : ∀ {m n} → + m ≤ + n → ℕ._≤_ m n
 drop‿+≤+ (+≤+ m≤n) = m≤n

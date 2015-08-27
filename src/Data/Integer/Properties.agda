@@ -11,13 +11,16 @@ import Algebra.FunctionProperties
 import Algebra.Morphism as Morphism
 import Algebra.Properties.AbelianGroup
 open import Algebra.Structures
-open import Data.Integer hiding (suc; _≤?_)
+open import Data.Integer hiding (_≤?_) renaming (suc to ℤsuc)
 import Data.Integer.Addition.Properties as Add
 import Data.Integer.Multiplication.Properties as Mul
 open import Data.Nat
-  using (ℕ; suc; zero; _∸_; _≤?_; _<_; _≥_; _≱_; s≤s; z≤n; ≤-pred)
-  renaming (_+_ to _ℕ+_; _*_ to _ℕ*_)
-open import Data.Nat.Properties as ℕ using (_*-mono_)
+  using (ℕ; suc; zero; _∸_; _≤?_; _≥_; _≱_; s≤s; z≤n; ≤-pred)
+  renaming (_+_ to _ℕ+_; _*_ to _ℕ*_; _≤_ to _ℕ≤_; _<_ to _ℕ<_)
+open import Data.Nat.Properties as ℕ using (_*-mono_; ≤-steps; ≤-step)
+  renaming (≤⇒pred≤ to ℕ≤⇒pred≤; ≰⇒> to ℕ≰⇒>)
+open import Data.Nat.Properties.Simple using (+-suc;
+  +-right-identity) renaming (+-comm to ℕ+-comm)
 open import Data.Product using (proj₁; proj₂; _,_)
 open import Data.Sign as Sign using () renaming (_*_ to _S*_)
 import Data.Sign.Properties as SignProp
@@ -26,7 +29,7 @@ open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-
+open import Data.Empty
 open Algebra.FunctionProperties (_≡_ {A = ℤ})
 open CommutativeMonoid Add.commutativeMonoid
   using ()
@@ -69,6 +72,10 @@ abs-◃ : ∀ s n → ∣ s ◃ n ∣ ≡ n
 abs-◃ _      zero    = refl
 abs-◃ Sign.- (suc n) = refl
 abs-◃ Sign.+ (suc n) = refl
+
+abs : {n : ℕ} -> ∣ -[1+ n ] ∣ ≡ suc n
+abs {zero} = refl
+abs {suc n} = refl
 
 abs-cong : ∀ {s₁ s₂ n₁ n₂} →
            s₁ ◃ n₁ ≡ s₂ ◃ n₂ → n₁ ≡ n₂
@@ -127,7 +134,7 @@ private
 
   -- Various lemmas used to prove distributivity.
 
-  sign-⊖-< : ∀ {m n} → m < n → sign (m ⊖ n) ≡ Sign.-
+  sign-⊖-< : ∀ {m n} → m ℕ< n → sign (m ⊖ n) ≡ Sign.-
   sign-⊖-< {zero}  (s≤s z≤n) = refl
   sign-⊖-< {suc n} (s≤s m<n) = sign-⊖-< m<n
 
@@ -146,18 +153,23 @@ private
 
   -- Lemmas relating _⊖_ and _∸_.
 
-  ∣⊖∣-< : ∀ {m n} → m < n → ∣ m ⊖ n ∣ ≡ n ∸ m
+  ∣⊖∣-< : ∀ {m n} → m ℕ< n → ∣ m ⊖ n ∣ ≡ n ∸ m
   ∣⊖∣-< {zero}  (s≤s z≤n) = refl
   ∣⊖∣-< {suc n} (s≤s m<n) = ∣⊖∣-< m<n
 
   ∣⊖∣-≱ : ∀ {m n} → m ≱ n → ∣ m ⊖ n ∣ ≡ n ∸ m
   ∣⊖∣-≱ = ∣⊖∣-< ∘ ℕ.≰⇒>
 
+  ∣⊖∣-≤ : ∀ {m n} → m ℕ≤ n → + ∣ m ⊖ n ∣ ≡ n ⊖ m
+  ∣⊖∣-≤ {zero} {zero} (z≤n) = refl
+  ∣⊖∣-≤ {zero} {suc n} (z≤n) = refl
+  ∣⊖∣-≤ {suc n} (s≤s m≤n) = ∣⊖∣-≤ m≤n
+
   ⊖-≥ : ∀ {m n} → m ≥ n → m ⊖ n ≡ + (m ∸ n)
   ⊖-≥ z≤n       = refl
   ⊖-≥ (s≤s n≤m) = ⊖-≥ n≤m
 
-  ⊖-< : ∀ {m n} → m < n → m ⊖ n ≡ - + (n ∸ m)
+  ⊖-< : ∀ {m n} → m ℕ< n → m ⊖ n ≡ - + (n ∸ m)
   ⊖-< {zero}  (s≤s z≤n) = refl
   ⊖-< {suc m} (s≤s m<n) = ⊖-< m<n
 
@@ -318,6 +330,52 @@ module RingSolver =
 ------------------------------------------------------------------------
 -- More properties
 
+-swap : (a b : ℤ) -> (- (a - b) ≡ b - a)
+-swap -[1+ n ] -[1+ n₁ ] = sym (⊖-swap n n₁)
+-swap -[1+ n ] (+ zero) = refl
+-swap -[1+ n ] (+ suc n₁) = trans (cong (λ a -> + suc (suc a)) 
+  (ℕ+-comm n n₁)) (cong +_ (sym (+-suc (suc n₁) n)))
+-swap (+ zero) -[1+ n₁ ] = refl
+-swap (+ suc n) -[1+ n₁ ] = cong -[1+_] (ℕ+-comm n (suc n₁))
+-swap (+ zero) (+ zero) = refl
+-swap (+ zero) (+ suc n₁) = cong +_ (sym (+-right-identity (suc n₁)))
+-swap (+ suc n) (+ zero) = cong -[1+_] (+-right-identity n)
+-swap (+ suc n) (+ suc n₁) = sym (⊖-swap n₁ n)
+
+≤⇒pred≤ : ∀ m n → ℤsuc m ≤ n → m ≤ n
+≤⇒pred≤ -[1+ zero ] -[1+ n₁ ] ()
+≤⇒pred≤ -[1+ suc n ] -[1+ n₁ ] (-≤- le) = -≤- (≤-step le)
+≤⇒pred≤ -[1+ zero ] (+ n₁) le = -≤+
+≤⇒pred≤ -[1+ suc n ] (+ n₁) le = -≤+
+≤⇒pred≤ (+ n) -[1+ n₁ ] ()
+≤⇒pred≤ (+ zero) (+ n₁) le = +≤+ z≤n
+≤⇒pred≤ (+ suc n) (+ n₁) (+≤+ le) = +≤+ (ℕ≤⇒pred≤ (suc (suc n)) n₁ le)
+
+≰⇒> : _≰_ ⇒ _>_
+≰⇒> { -[1+ n ]} { -[1+ zero ]} p = ⊥-elim (p (-≤- z≤n))
+≰⇒> { -[1+ zero ]} { -[1+ suc n₁ ]} p = -≤- z≤n
+≰⇒> { -[1+ suc n ]} { -[1+ suc n₁ ]} p = -≤- (ℕ≰⇒> {n₁} {n}
+  (p ∘ (λ x → -≤- (s≤s x))))
+≰⇒> { -[1+ n ]} {+ n₁} p = ⊥-elim (p (-≤+))
+≰⇒> {+ n} { -[1+ zero ]} p = +≤+ z≤n
+≰⇒> {+ n} { -[1+ suc n₁ ]} p = -≤+
+≰⇒> {+ zero} {+ n} p = ⊥-elim (p (+≤+ z≤n))
+≰⇒> {+ suc n} {+ zero} p = +≤+ (s≤s z≤n)
+≰⇒> {+ suc n} {+ suc n₁} p = +≤+ (s≤s (ℕ≰⇒> {n} {n₁}
+  (p ∘ (λ x → +≤+ (s≤s x)))))
+
+∣-∣-≤ : ∀ {m n} → m ≤ n → (+ ∣ m - n ∣ ≡ n - m)
+∣-∣-≤ { -[1+ n ]} {+ zero} -≤+ = refl
+∣-∣-≤ { -[1+ m ]} {+ suc n} -≤+ = trans (trans (cong (λ a -> +
+    ∣ -[1+ a ] ∣) (sym (+-suc m n))) (cong +_ (abs {m ℕ+ suc n})) )
+    (cong +_ (sym (ℕ+-comm (suc n) (suc m))))
+∣-∣-≤ { -[1+ m ]} { -[1+ n ] } (-≤- n≤m) = ∣⊖∣-≤ n≤m
+∣-∣-≤ {+ zero} {+ zero} (+≤+ z≤s) = refl
+∣-∣-≤ {+ zero} {+ suc n} (+≤+ z≤s) = trans (cong +_ (abs {n}))
+    (cong +_ (sym (+-right-identity (suc n))))
+∣-∣-≤ {+ suc m} {+ zero} (+≤+ ())
+∣-∣-≤ {+ suc m} {+ suc n} (+≤+ m≤n) = (∣⊖∣-≤ {suc m}{suc n} (m≤n))
+
 -- Multiplication is right cancellative for non-zero integers.
 
 cancel-*-right : ∀ i j k →
@@ -381,3 +439,68 @@ cancel-*-+-right-≤ (+ suc m)  (+ suc n)  o (+≤+ m≤n) =
 *-+-right-mono _ (+≤+ {m = suc _} {n = 0}     ())
 *-+-right-mono x (+≤+ {m = suc _} {n = suc _} m≤n) =
   +≤+ (m≤n *-mono ≤-refl {x = suc x})
+
+_+-mono_ :  _+_ Preserves₂ _≤_ ⟶ _≤_ ⟶ _≤_
+-≤+ +-mono -≤+ = -≤+
+-≤+ {n} {zero} +-mono -≤- {m} {zero} m₁≤n₁ = -≤- z≤n
+-≤+ +-mono -≤- {zero} {suc n} ()
+-≤+ {zero} {zero} +-mono -≤- {suc m} {suc n} m₁≤n₁ =
+  -≤- (z≤n {suc zero} ℕ.+-mono m₁≤n₁)
+-≤+ {m} {suc n} +-mono -≤- {m₁} {zero} m₁≤n₁ = -≤+
+-≤+ {zero} {suc n} +-mono -≤- {suc m} {suc n₁} (s≤s m₁≤n₁) =
+  -≤+ {suc zero} {n} +-mono -≤- {m} {n₁} (m₁≤n₁)
+-≤+ {suc m} {zero} +-mono -≤- {suc m₁} {suc n} m₁≤n₁ =
+  -≤- (≤-steps (suc (suc m)) m₁≤n₁)
+-≤+ {suc m} {suc n} +-mono -≤- {suc m₁} {suc n₁} (s≤s m₁≤n₁) =
+  -≤+ {suc m} {n} +-mono -≤- {suc m₁} {n₁} (≤-step m₁≤n₁)
+-≤+ +-mono +≤+ {zero} {n₁} m≤n = -≤+
+-≤+ +-mono +≤+ {suc m₁} {zero} () 
+-≤+ {zero} {n} +-mono +≤+ {suc m₁} {suc n₁} (s≤s m≤n) =
+  +≤+ (≤-steps n (≤-step m≤n))
+-≤+ {suc m} {n} +-mono +≤+ {suc m₁} {suc n₁} (s≤s m≤n) =
+  -≤+ {m}{n} +-mono +≤+ {m₁}{suc n₁} (≤-step m≤n)
+-≤- {m} {zero} n≤m +-mono -≤+ {n₁} {zero} = -≤- z≤n
+-≤- {m} {zero} n≤m +-mono -≤+ {n₁} {suc n} = -≤+
+-≤- {zero} {suc n}() +-mono -≤+
+-≤- {suc m} {suc n} n≤m +-mono -≤+ {zero} {zero} =
+  -≤- (subst₂ (λ a b -> a ℕ≤ suc b) (+-right-identity (suc n))
+    (+-suc m zero) (n≤m ℕ.+-mono z≤n {suc zero}))
+-≤- {suc m} {suc n} (s≤s n≤m) +-mono -≤+ {m₁} {suc n₁} =
+  -≤- {suc m} {n} (≤-step n≤m) +-mono -≤+ {m₁}{n₁}
+-≤- {suc m} {suc n} (s≤s n≤m) +-mono -≤+ {m₁} {zero} =
+  -≤- (subst (λ a -> suc n ℕ≤ suc (suc a)) (ℕ+-comm m₁ m)
+    (s≤s (≤-step (≤-steps m₁ n≤m))))
+-≤- {m} {n}  n≤m +-mono -≤-  n≤m₁ = -≤- (s≤s (n≤m ℕ.+-mono n≤m₁))
+-≤- {zero} {zero} n≤m +-mono +≤+ {zero} {zero} m≤n = -≤- m≤n
+-≤- {m} {zero} n≤m +-mono +≤+ {zero} {suc n} m≤n = -≤+
+-≤-  n≤m +-mono +≤+ {suc m} {zero} ()
+-≤- {zero} {zero} n≤m +-mono +≤+ {suc m} {suc n} (s≤s m≤n) =
+  +≤+ m≤n
+-≤- {zero} {suc n} () +-mono +≤+ m≤n
+-≤- {suc m} {n} n≤m +-mono +≤+ {zero} {zero} m≤n = -≤- n≤m
+-≤- {suc m} {zero} z≤n +-mono +≤+ {suc m₁} {suc n} (s≤s m≤n) =
+  -≤+ {m} {zero} +-mono +≤+ {m₁} {n} m≤n
+-≤- {suc m} {suc n} (s≤s n≤m) +-mono +≤+ {zero} {suc n₁} m≤n =
+  -≤+ {zero}{n₁} +-mono -≤- n≤m
+-≤- {suc m} {suc n} (s≤s n≤m) +-mono +≤+ {suc m₁} {suc n₁} (s≤s m≤n) =
+  -≤- n≤m +-mono +≤+ m≤n
++≤+ {zero} {n} m≤n +-mono -≤+ = -≤+
++≤+ {suc m} {zero} () +-mono -≤+
++≤+ {suc m} {suc n} (s≤s m≤n) +-mono -≤+ {zero} {n₁} =
+  +≤+ (subst (λ a -> m ℕ≤ suc a) (ℕ+-comm n₁ n) (≤-steps (suc n₁) (m≤n)))
++≤+ {suc m} {suc n} (s≤s m≤n) +-mono -≤+ {suc m₁} {n₁} =
+  +≤+ {m} {suc n} (≤-step m≤n) +-mono -≤+ {m₁} {n₁}
++≤+ {zero} {zero} m≤n +-mono -≤- n≤m = -≤- n≤m
++≤+ {zero} {suc n} m≤n +-mono -≤- {n₁} {zero} n≤m = -≤+
++≤+ m≤n +-mono -≤- {zero} {suc n₁} ()
++≤+ {zero} {suc n} z≤n +-mono -≤- {suc m} {suc n₁} (s≤s n≤m) =
+  -≤+ {zero}{n} +-mono -≤- {m}{n₁} n≤m
++≤+ {suc m} {zero} () +-mono -≤- n≤m
++≤+ {suc m} {suc n} (s≤s m≤n) +-mono -≤- {zero} {zero} n≤m = +≤+ m≤n
++≤+ {suc m} {suc n} (s≤s m≤n) +-mono -≤- {suc m₁} {zero} z≤n =
+  -≤+ {m₁}{zero} +-mono +≤+ m≤n
++≤+ {suc m} {suc n} (s≤s m≤n) +-mono -≤- {suc m₁} {suc n₁} (s≤s n≤m) =
+  -≤- n≤m +-mono +≤+ m≤n
++≤+ m≤n +-mono +≤+ m≤n₁ = +≤+ (m≤n ℕ.+-mono m≤n₁)
+
+

@@ -3,8 +3,9 @@ module Data.Real where
 open import Data.Sum
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; 
   _-_; _+_; ∣_∣;  decTotalOrder; _≤_; *≤* ; _≤?_; _÷_; ≡⇒≃)
-open import Data.Rational.Properties using (ℚ-swap; ℚabs₂; 
-  +-red₂; triang; _ℚ+-mono_; ℚ≤lem; _⁻¹; lim; ℚ≤-abs₁; ℚ≤-abs₂)
+open import Data.Rational.Properties using (ℚabs₂; 
+  +-red₂; triang; ℚ≤lem; _⁻¹; ℚ≤-abs₁; ℚ≤-abs₂)
+  renaming (-swap to ℚ-swap; _+-mono_ to _ℚ+-mono_)
 open import Data.Integer as ℤ using (ℤ; +_ ; -[1+_])
 open import Data.Nat as ℕ using (ℕ; suc; zero; _≤?_)
 open import Data.Nat.Properties.Simple using (+-right-identity)
