@@ -1,13 +1,18 @@
 module Data.Real where
 
+open import Data.Empty
 open import Data.Sum
+open import Relation.Binary.Core
+open import Function
 open import Data.Rational as ℚ using (ℚ; -_ ; _*_; _÷suc_; 
   _-_; _+_; ∣_∣;  decTotalOrder; _≤_; *≤* ; _≤?_; _÷_; ≡⇒≃)
+   renaming (isEquivalence to ℚisEquivalence)
 open import Data.Rational.Properties using (ℚ-swap; ℚabs₂; 
-  +-red₂; triang; _ℚ+-mono_; ℚ≤lem; _⁻¹; lim; ℚ≤-abs₁; ℚ≤-abs₂)
-open import Data.Integer as ℤ using (ℤ; +_ ; -[1+_])
+  +-red₂; triang; _ℚ+-mono_; ℚ≤lem; _⁻¹; lim; ℚ≤-abs₁; ℚ≤-abs₂;
+  _ℚ<_; ℚ≤lem₂; ℚ+-comm; ℚ+-assoc; ℚ≰⇒>; <⇒≤)
+open import Data.Integer as ℤ using (ℤ; +_ ; -[1+_]; ◃-left-inverse)
 open import Data.Nat as ℕ using (ℕ; suc; zero; _≤?_)
-open import Data.Nat.Properties.Simple using (+-right-identity)
+open import Data.Nat.Properties.Simple using (+-right-identity; +-comm)
 open import Relation.Binary.Core using (Rel; IsEquivalence)
 import Level
 open import Relation.Nullary.Core
@@ -42,29 +47,59 @@ postulate Bishopslem : {x y : ℝ} ->
            ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)) 
            -> (x ≃ y)
 
+
+--To test if the principle is right i'm just gonna use ≤ for now
+lemeronia : {p q : ℚ} -> ((p ≤ q) -> ⊥) -> ∃ λ e -> ((p ≤ q + (suc e) ⁻¹) -> ⊥)
+lemeronia { -[1+ n ] ÷suc d} { -[1+ n₁ ] ÷suc d₁} ¬p = {!(_ , ())!}
+lemeronia { -[1+ n ] ÷suc d} {(+ n₁) ÷suc d₁} ¬p = {!!}
+lemeronia {(+ n) ÷suc d} { -[1+ n₁ ] ÷suc d₁} ¬p = {!!}
+lemeronia {(+ n) ÷suc d} {(+ n₁) ÷suc d₁} ¬p = {!!}
+
 --This lemma ((2.3) in Constructive Analysis) gives us a
 --useful way to show equality
-bishopslem : {x y : ℝ}{m : ℕ} -> 
-           ({j : ℕ} -> (∃ λ Nⱼ -> ({m : ℕ} -> 
-           ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹)))
+bishopslem : {x y : ℝ} -> 
+           ({j : ℕ} -> (∃ λ Nⱼ -> {m : ℕ} -> 
+           ∣ ℝ.f x (Nⱼ ℕ.+ m) - ℝ.f y (Nⱼ ℕ.+ m) ∣ ≤ (suc j)⁻¹))
            -> ({n : ℕ} -> ∣ ℝ.f x n - ℝ.f y n ∣ ≤ (suc n)⁻¹ ℚ.+ (suc n)⁻¹)
-bishopslem {x}{y}{m} f  = λ {n} -> begin
-  ∣ ℝ.f x n - ℝ.f y n ∣ ∼⟨ triang (ℝ.f x n) (ℝ.f x m) (ℝ.f y n) ⟩
-  ∣ ℝ.f x n - ℝ.f x m ∣ + ∣ ℝ.f x m - ℝ.f y n ∣ ∼⟨  ≈->≤ {∣ ℝ.f x n - ℝ.f x m ∣}{∣ ℝ.f x n - ℝ.f x m ∣} refl ℚ+-mono  triang (ℝ.f x m) (ℝ.f y m) (ℝ.f y n)   ⟩
-  ∣ ℝ.f x n - ℝ.f x m ∣ + (∣ ℝ.f x m - ℝ.f y m ∣ + ∣ ℝ.f y m - ℝ.f y n ∣) ∼⟨ {!!} {-ℝ.reg x {n}{m} ℚ+-mono (proj₂ f ℚ+-mono ℝ.reg y {m}{n}) -} ⟩
-  suc n ⁻¹ + suc m ⁻¹ + (suc m ⁻¹ + (suc m ⁻¹ + suc n ⁻¹)) ∼⟨ (≈->≤ {suc n ⁻¹}{suc n ⁻¹} refl ℚ+-mono lim (suc m ⁻¹) ( {!!})) ℚ+-mono (lim (suc m ⁻¹) ({!!}) ℚ+-mono (lim (suc m ⁻¹) ( {!!}) ℚ+-mono ≈->≤ {suc n ⁻¹}{suc n ⁻¹} refl)) ⟩
-  suc n ⁻¹ + 0' + (0' + (0' + suc n ⁻¹)) ∼⟨ {!!} ⟩
-  suc n ⁻¹ + suc n ⁻¹ ∎
+bishopslem {x}{y} f  {n} with ∣ ℝ.f x n - ℝ.f y n ∣ ℚ.≤? (suc n)⁻¹ ℚ.+ (suc n)⁻¹
+bishopslem {x}{y} f | yes p = p
+bishopslem {x}{y} f {n} | no ¬p  = ⊥-elim (proj₂ (lemeronia ¬p) prof)
   where
-      open DecTotalOrder ℚ.decTotalOrder using () 
-        renaming (reflexive to ≈->≤; trans to ≤trans; isPreorder to ℚisPreorder)
-      --j : ℕ
-      --Nⱼ = proj₁ f
-      --m = λ {m} -> m
-      --j = λ {j} -> j
-      --m = Nⱼ ℕ.+ j
-      0' = (+ 0)÷suc 0
-      open Pre record {isPreorder = ℚisPreorder}
+    e/3 = (proj₁ (lemeronia {∣ ℝ.f x n - ℝ.f y n ∣}{(suc n)⁻¹ ℚ.+ (suc n)⁻¹} ¬p))
+    m' =  (proj₁ (f {e/3})) ℕ.+ e/3
+    e = (suc e/3)⁻¹ + ((suc e/3)⁻¹ + (suc e/3)⁻¹ )
+    prof : ∣ ℝ.f x n - ℝ.f y n ∣ ≤ (suc n)⁻¹ ℚ.+ (suc n)⁻¹ + e
+    prof = begin ∣ ℝ.f x n - ℝ.f y n ∣ ∼⟨ triang (ℝ.f x n) (ℝ.f x m') (ℝ.f y n) ⟩
+      ∣ ℝ.f x n - ℝ.f x m' ∣ + ∣ ℝ.f x m' - ℝ.f y n ∣ ∼⟨  ≈->≤ {∣ ℝ.f x n - ℝ.f x m' ∣}{∣ ℝ.f x n - ℝ.f x m' ∣} refl ℚ+-mono  triang (ℝ.f x m') (ℝ.f y m') (ℝ.f y n)   ⟩
+      ∣ ℝ.f x n - ℝ.f x m' ∣ + (∣ ℝ.f x m' - ℝ.f y m' ∣ + ∣ ℝ.f y m' - ℝ.f y n ∣) ∼⟨  ℝ.reg x {n}{m'} ℚ+-mono ((proj₂ (f {e/3})) ℚ+-mono ℝ.reg y {m'}{n})  ⟩
+      suc n ⁻¹ + suc m' ⁻¹ + (suc e/3 ⁻¹ + (suc m' ⁻¹ + suc n ⁻¹)) ∼⟨ ≈->≤ {suc n ⁻¹ + suc m' ⁻¹}{suc n ⁻¹ + suc m' ⁻¹} refl ℚ+-mono (≈->≤ {suc e/3 ⁻¹}{suc e/3 ⁻¹} refl ℚ+-mono ≈->≤ {suc m' ⁻¹ + suc n ⁻¹}{suc n ⁻¹ + suc m' ⁻¹ } (ℚ+-comm (suc m' ⁻¹) (suc n ⁻¹)) ) ⟩
+      suc n ⁻¹ + suc m' ⁻¹ + (suc e/3 ⁻¹ + (suc n ⁻¹ + suc m' ⁻¹)) ∼⟨ ≈->≤ {suc n ⁻¹ + suc m' ⁻¹}{suc n ⁻¹ + suc m' ⁻¹} refl ℚ+-mono (≈->≤ {(suc e/3 ⁻¹ + (suc n ⁻¹ + suc m' ⁻¹))}{(suc e/3 ⁻¹ + suc n ⁻¹ + suc m' ⁻¹)} (ℚsym {(suc e/3 ⁻¹ + suc n ⁻¹ + suc m' ⁻¹)}{(suc e/3 ⁻¹ + (suc n ⁻¹ + suc m' ⁻¹))}(ℚ+-assoc (suc e/3 ⁻¹) (suc n ⁻¹) (suc m' ⁻¹)))) ⟩
+      suc n ⁻¹ + suc m' ⁻¹ + (suc e/3 ⁻¹ + suc n ⁻¹ + suc m' ⁻¹) ∼⟨ ≈->≤ {suc n ⁻¹ + suc m' ⁻¹}{suc n ⁻¹ + suc m' ⁻¹} refl ℚ+-mono ((≈->≤ {suc e/3 ⁻¹ + suc n ⁻¹}{suc n ⁻¹ + suc e/3 ⁻¹}(ℚ+-comm (suc e/3 ⁻¹) (suc n ⁻¹)) ℚ+-mono ≈->≤ {suc m' ⁻¹}{suc m' ⁻¹} refl)) ⟩
+      suc n ⁻¹ + suc m' ⁻¹ + (suc n ⁻¹ + suc e/3 ⁻¹ + suc m' ⁻¹) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + (suc m' ⁻¹ + (suc n ⁻¹ + suc e/3 ⁻¹ + suc m' ⁻¹)) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + (suc m' ⁻¹ + (suc n ⁻¹ + (suc e/3 ⁻¹ + suc m' ⁻¹))) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + (suc m' ⁻¹ + suc n ⁻¹ + (suc e/3 ⁻¹ + suc m' ⁻¹)) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + (suc n ⁻¹ + suc m' ⁻¹ + (suc e/3 ⁻¹ + suc m' ⁻¹)) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + (suc n ⁻¹ + (suc m' ⁻¹ + (suc e/3 ⁻¹ + suc m' ⁻¹))) ∼⟨ {!!} ⟩
+      suc n ⁻¹ + suc n ⁻¹ + (suc m' ⁻¹ + (suc e/3 ⁻¹ + suc m' ⁻¹)) ∼⟨ (≈->≤ {suc n ⁻¹ + suc n ⁻¹}{suc n ⁻¹ + suc n ⁻¹} refl) ℚ+-mono (ℚ≤lem₂ {e/3}{proj₁ (f {e/3})} ℚ+-mono (≈->≤ {suc e/3 ⁻¹}{suc e/3 ⁻¹} refl ℚ+-mono (ℚ≤lem₂ {e/3}{proj₁ (f {e/3})}))) ⟩
+      suc n ⁻¹ + suc n ⁻¹ + e ∎
+      where
+        open IsEquivalence ℚ.isEquivalence using ()
+          renaming (sym to ℚsym; trans to ℚtrans)
+        open DecTotalOrder ℚ.decTotalOrder using () 
+          renaming (reflexive to ≈->≤; trans to ≤trans; isPreorder to ℚisPreorder)
+        open Pre record {isPreorder = ℚisPreorder}
+        
+    
+
+{--}
+{-λ {n} -> begin
+  ∣ ℝ.f x n - ℝ.f y n ∣ ∼⟨ triang (ℝ.f x n) (ℝ.f x j) (ℝ.f y n) ⟩
+  ∣ ℝ.f x n - ℝ.f x j ∣ + ∣ ℝ.f x j - ℝ.f y n ∣ ∼⟨  ≈->≤ {∣ ℝ.f x n - ℝ.f x j ∣}{∣ ℝ.f x n - ℝ.f x j ∣} refl ℚ+-mono  triang (ℝ.f x j) (ℝ.f y j) (ℝ.f y n)   ⟩
+  ∣ ℝ.f x n - ℝ.f x j ∣ + (∣ ℝ.f x j - ℝ.f y j ∣ + ∣ ℝ.f y j - ℝ.f y n ∣) ∼⟨ ℝ.reg x {n}{j} ℚ+-mono (f ℚ+-mono ℝ.reg y {j}{n}) ⟩
+  suc n ⁻¹ + suc j ⁻¹ + (suc j ⁻¹ + (suc j ⁻¹ + suc n ⁻¹)) ∼⟨ ? ⟩
+  suc n ⁻¹ + 0' + (0' + (0' + suc n ⁻¹)) ∼⟨ {!!} ⟩
+  suc n ⁻¹ + suc n ⁻¹ ∎-}
 
 isEquivalence : IsEquivalence _≃_
 isEquivalence = record {
